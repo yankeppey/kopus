@@ -1,0 +1,8 @@
+headers      = opus.h
+headerFilter = **
+package      = opus.c
+
+staticLibraries = libopus.a
+libraryPaths.ios_arm64 = ../build/opus/iphoneos/arm64/lib
+libraryPaths.ios_simulator_arm64 = ../build/opus/iphone/arm64/lib
+libraryPaths.ios_x64 = ../build/opus/iphone/x86_64/lib
