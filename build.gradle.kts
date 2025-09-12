@@ -9,4 +9,5 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
     alias(libs.plugins.composeHotReload) apply false
     alias(libs.plugins.composeMultiplatform) apply false
+    alias(libs.plugins.vanniktechMavenPublish) apply false
 }

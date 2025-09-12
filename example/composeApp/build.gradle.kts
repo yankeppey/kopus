@@ -48,7 +48,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
-            implementation(project(":kopus"))
+//            implementation(project(":kopus"))
+            implementation(libs.kopus)
             implementation (libs.compose.charts)
         }
         commonTest.dependencies {

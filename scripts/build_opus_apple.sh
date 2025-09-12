@@ -2,8 +2,9 @@
 set -euo pipefail
 
 # Build static libopus.a for iOS and macOS architectures
-OPUS_DIR="$(cd "$(dirname "$0")/../third_party/opus" && pwd)"
-OUT_ROOT="${PWD}/build/opus"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OPUS_DIR="$(cd "$SCRIPT_DIR/../third_party/opus" && pwd)"
+OUT_ROOT="$SCRIPT_DIR/../build/opus"
 
 # Target architectures for iOS and macOS
 TARGETS=(

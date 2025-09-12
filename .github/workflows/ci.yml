@@ -1,0 +1,218 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to GitHub Packages'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Cross-Platform Build (Linux/Windows native libraries and JNI)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  build-cross-platform:
+    name: Build Cross-Platform Libraries (Linux/Windows)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Fetch git tags for version detection
+        run: |
+          echo "Fetching tags for opus submodule to enable version detection..."
+          git submodule foreach git fetch --tags
+          echo "=== Git tags in opus submodule ==="
+          cd third_party/opus
+          git tag | grep v1.5 || echo "No v1.5.x tags found"
+          echo "=== Git describe test ==="
+          git describe --tags --match 'v*' || echo "Git describe failed"
+          
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+            build-essential autoconf automake libtool pkg-config \
+            cmake mingw-w64 gcc-aarch64-linux-gnu curl unzip
+            
+      - name: Run autogen
+        run: |
+          cd third_party/opus
+          ./autogen.sh
+          
+      - name: Debug package_version after autogen
+        run: |
+          echo "=== Checking Opus submodule ==="
+          git submodule status third_party/opus
+          cd third_party/opus
+          echo "=== Contents of package_version (after autogen) ==="
+          ls -la package_version || echo "package_version not found after autogen"
+          if [ -f package_version ]; then
+            echo "package_version contents:"
+            cat package_version
+            echo "=== Sourcing package_version to verify PACKAGE_VERSION ==="
+            . ./package_version
+            echo "PACKAGE_VERSION extracted: $PACKAGE_VERSION"
+          else
+            echo "ERROR: package_version file not created by autogen.sh"
+          fi
+          
+      - name: Download Windows JDK
+        run: |
+          curl -L -o /tmp/jdk-win.zip https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11+9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip
+          mkdir -p /tmp/winjdk
+          unzip /tmp/jdk-win.zip -d /tmp/winjdk
+          rm /tmp/jdk-win.zip
+          
+      - name: Build Linux x86_64 native library
+        run: |
+          cd third_party/opus
+          make distclean || true
+          ./configure --host=x86_64-linux-gnu --disable-shared --disable-rtcd --enable-static --prefix=/tmp/out/linux/x86_64 CFLAGS="-O3 -fPIC"
+          make -j$(nproc) && make install
+          
+      - name: Build Linux arm64 native library
+        run: |
+          cd third_party/opus
+          make distclean || true
+          CC=aarch64-linux-gnu-gcc ./configure --host=aarch64-linux-gnu --disable-shared --disable-rtcd --enable-static --prefix=/tmp/out/linux/arm64 CFLAGS="-O3"
+          make -j$(nproc) && make install
+          
+      - name: Build Windows x86_64 native library
+        run: |
+          cd third_party/opus
+          make distclean || true
+          CC=x86_64-w64-mingw32-gcc ./configure --host=x86_64-w64-mingw32 --disable-shared --enable-static --prefix=/tmp/out/windows/x86_64 CFLAGS="-D_FORTIFY_SOURCE=0 -O3"
+          make -j$(nproc) && make install
+          
+      - name: Build JNI libraries
+        run: |
+          # Linux x86_64 JNI
+          cmake -B /tmp/jni-linux-x64 -S kopus/jni \
+            -DJAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+            -DOPUS_INCLUDE_DIR=/tmp/out/linux/x86_64/include/opus \
+            -DOPUS_LIB_PATH=/tmp/out/linux/x86_64/lib/libopus.a
+          cmake --build /tmp/jni-linux-x64 --config Release
+          
+          # Linux arm64 JNI  
+          cmake -B /tmp/jni-linux-arm64 -S kopus/jni \
+            -DJAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+            -DOPUS_INCLUDE_DIR=/tmp/out/linux/arm64/include/opus \
+            -DOPUS_LIB_PATH=/tmp/out/linux/arm64/lib/libopus.a \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+          cmake --build /tmp/jni-linux-arm64 --config Release
+          
+          # Windows x86_64 JNI
+          cmake -B /tmp/jni-win-x64 -S kopus/jni \
+            -DJAVA_HOME=/tmp/winjdk/jdk-17.0.11+9 \
+            -DOPUS_INCLUDE_DIR=/tmp/out/windows/x86_64/include/opus \
+            -DOPUS_LIB_PATH=/tmp/out/windows/x86_64/lib/libopus.a \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc
+          cmake --build /tmp/jni-win-x64 --config Release
+          
+      - name: Collect artifacts
+        run: |
+          mkdir -p desktop-native-libs/linux/x86_64
+          mkdir -p desktop-native-libs/linux/arm64  
+          mkdir -p desktop-native-libs/windows/x86_64
+          
+          cp /tmp/jni-linux-x64/libopus_jni.so desktop-native-libs/linux/x86_64/
+          cp /tmp/jni-linux-arm64/libopus_jni.so desktop-native-libs/linux/arm64/
+          cp /tmp/jni-win-x64/libopus_jni.dll desktop-native-libs/windows/x86_64/
+          
+      - name: Upload Desktop Native Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-native-libs
+          path: desktop-native-libs/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Comprehensive macOS Build (Android, Apple platforms, iOS, JVM with all natives)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  build-macos-comprehensive:
+    name: Build All Platforms (macOS runner)
+    runs-on: macos-latest
+    needs: [build-cross-platform]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        
+      - name: Fetch git tags for version detection
+        run: |
+          echo "Fetching tags for opus submodule to enable version detection..."
+          git submodule foreach git fetch --tags
+          echo "=== Git tags in opus submodule ==="
+          cd third_party/opus
+          git tag | grep v1.5 || echo "No v1.5.x tags found"
+          echo "=== Git describe test ==="
+          git describe --tags --match 'v*' || echo "Git describe failed"
+        
+      - name: Download Desktop Native Libraries
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-native-libs
+          path: kopus/build/jni_docker/
+
+      - name: Install autotools dependencies
+        run: |
+          brew install autoconf automake libtool
+          
+      - name: Build Opus for Apple Platforms
+        run: ./scripts/build_opus_apple.sh
+
+      - name: Build macOS JNI Libraries
+        run: ./scripts/build_opus_jni.sh
+
+      - name: Publish All Platforms to Maven Local
+        run: ./gradlew publishToMavenLocal -Pci.skip.native.build --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+      - name: Publish All Platforms to Maven Central
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+        run: ./gradlew publishToMavenCentral -Pci.skip.native.build --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        
+      - name: Pack Kopus Maven Artifacts
+        run: |
+          cd ~/.m2/repository
+          tar -czf /tmp/kopus-maven-artifacts.tar.gz eu/buney/
+          
+      - name: Upload Kopus Maven Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kopus-maven-artifacts
+          path: /tmp/kopus-maven-artifacts.tar.gz
+          retention-days: 7
+  

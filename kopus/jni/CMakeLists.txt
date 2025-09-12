@@ -26,6 +26,13 @@ if(ANDROID)
 
     add_library(opus STATIC IMPORTED)
     set_target_properties(opus PROPERTIES IMPORTED_LOCATION ${OPUS_LIB})
+    
+    # Add 16KB page size alignment for Android 15+ compatibility
+    # Required for Google Play starting November 1st, 2025
+    target_link_options(opus_jni PRIVATE 
+        "-Wl,-z,max-page-size=16384"
+        "-Wl,-z,common-page-size=16384"
+    )
 
     target_link_libraries(opus_jni PRIVATE opus ${JNI_LIBRARIES} m)
 

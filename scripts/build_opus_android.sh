@@ -13,8 +13,15 @@ HOSTS=("aarch64-linux-android" "armv7a-linux-androideabi" "x86_64-linux-android"
 for i in "${!ABIS[@]}"; do
   ABI="${ABIS[$i]}"
   HOST="${HOSTS[$i]}"
-  CC_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin/${HOST}${API}-clang"
-#  CC_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)/bin/${HOST}${API}-clang"
+  # Auto-detect platform for cross-platform compatibility
+  OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  if [[ "$OS" == "darwin" ]]; then
+    # NDK always uses darwin-x86_64 even on Apple Silicon Macs
+    PLATFORM="darwin-x86_64"
+  else
+    PLATFORM="$OS-$(uname -m)"
+  fi
+  CC_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$PLATFORM/bin/${HOST}${API}-clang"
 
   OUT_DIR="$OUT_ROOT/$ABI"
   mkdir -p "$OUT_DIR"

@@ -4,20 +4,25 @@ import org.gradle.jvm.tasks.Jar
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    // Add this:
-    `maven-publish`
+    alias(libs.plugins.vanniktechMavenPublish)
 }
 
 android {
     namespace = "eu.buney.kopus"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "27.3.13750724"
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64") }
 
         consumerProguardFiles("consumer-rules.pro")
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     externalNativeBuild {
@@ -154,15 +159,24 @@ val buildOpusAndroid by tasks.register<Exec>("buildOpusAndroid") {
 }
 
 tasks.named { "ios" in it }.configureEach {
-    dependsOn(buildOpusApple)
+    if (!project.hasProperty("ci.skip.native.build")) {
+        dependsOn(buildOpusApple)
+    }
 }
 
 tasks.named<Jar>("jvmJar") {
-    dependsOn(buildJniLinuxWindows, buildJniMacos)
+    // Only depend on native build tasks if not in CI mode
+    if (!project.hasProperty("ci.skip.native.build")) {
+        dependsOn(buildJniLinuxWindows, buildJniMacos)
+    }
 
     from(buildJniMacosFolder) {
-        include("libopus_jni.dylib")
-        into("native/macos/arm64")
+        include("arm64/libopus_jni.dylib")
+        into("native/macos")
+    }
+    from(buildJniMacosFolder) {
+        include("x86_64/libopus_jni.dylib")
+        into("native/macos")
     }
     from(jniDockerOutputDir) {
         into("native")
@@ -182,32 +196,44 @@ val cleanBuildJniMacosWindows by tasks.registering(Delete::class) {
     delete(jniDockerOutputDir)
 }
 
+
 tasks.named("clean") {
     dependsOn(cleanBuildOpusAndroid, cleanBuildJniMacos, cleanBuildOpusApple, cleanBuildJniMacosWindows)
 }
 
+group = "eu.buney.kopus"
+version = libs.versions.kopus.get()
 
-publishing {
-    publications {
-        withType<MavenPublication>().configureEach {
-            groupId = "eu.buney.kopus"
-            version = "1.5.2-SNAPSHOT"
+mavenPublishing {
+    publishToMavenCentral()
 
-            pom {
-                name.set("Kopus")
-                description.set("Kotlin Multiplatform bindings for Opus")
-                url.set("https://github.com/your-repo")
-                licenses {
-                    license {
-                        name.set("The MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
+    signAllPublications()
+
+    coordinates(group.toString(), "kopus", version.toString())
+
+    pom {
+        name = "Kopus"
+        description = "Kotlin Multiplatform bindings for Opus"
+        inceptionYear = "2025"
+        url = "https://github.com/yankeppey/kopus"
+        licenses {
+            license {
+                name = "The MIT License"
+                url = "https://opensource.org/licenses/MIT"
             }
         }
-    }
-
-    repositories {
-        mavenLocal()
+        developers {
+            developer {
+                id = "yankeppey"
+                name = "Andrei Buneyeu"
+                email = "yankeppey@gmail.com"
+                url = "http://buney.eu"
+            }
+        }
+        scm {
+            url = "https://github.com/yankeppey/kopus/"
+            connection = "scm:git:git://github.com/yankeppey/kopus.git"
+            developerConnection = "scm:git:ssh://git@github.com/yankeppey/kopus.git"
+        }
     }
 }
