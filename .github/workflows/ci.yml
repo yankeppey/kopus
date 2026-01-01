@@ -33,10 +33,10 @@ jobs:
           git submodule foreach git fetch --tags
           echo "=== Git tags in opus submodule ==="
           cd third_party/opus
-          git tag | grep v1.5 || echo "No v1.5.x tags found"
+          git tag | grep v1.6 || echo "No v1.6.x tags found"
           echo "=== Git describe test ==="
           git describe --tags --match 'v*' || echo "Git describe failed"
-          
+
       - name: Install build dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y \
@@ -167,10 +167,10 @@ jobs:
           git submodule foreach git fetch --tags
           echo "=== Git tags in opus submodule ==="
           cd third_party/opus
-          git tag | grep v1.5 || echo "No v1.5.x tags found"
+          git tag | grep v1.6 || echo "No v1.6.x tags found"
           echo "=== Git describe test ==="
           git describe --tags --match 'v*' || echo "Git describe failed"
-        
+
       - name: Download Desktop Native Libraries
         uses: actions/download-artifact@v4
         with:

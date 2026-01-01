@@ -6,8 +6,10 @@
  */
 package eu.buney.kopus
 
-import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.io.path.createTempFile
+import kotlin.io.path.outputStream
 
 /**
  * Handles loading of the Opus JNI native library.
@@ -51,15 +53,14 @@ object OpusLoader {
 
         val resourcePath = "/native/$osPath/$archPath/$libName"
         val extracted = extractToTemp(resourcePath)
-        System.load(extracted.absolutePath)
+        System.load(extracted.toAbsolutePath().toString())
     }
 
-    private fun extractToTemp(path: String): File {
+    private fun extractToTemp(path: String): Path {
         val temp = createTempFile("libopus_jni")
         OpusLoader::class.java.getResourceAsStream(path)?.use { input ->
             temp.outputStream().use { output -> input.copyTo(output) }
         } ?: throw RuntimeException("Could not find $path in resources!")
-        temp.deleteOnExit()
         return temp
     }
 }

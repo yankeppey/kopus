@@ -27,7 +27,7 @@ Note: The library has been primarily tested on macOS arm64 and Linux x86_64. Whi
 
 ```kotlin
 dependencies {
-    implementation("eu.buney.kopus:kopus:1.5.2")
+    implementation("eu.buney.kopus:kopus:1.6")
 }
 ```
 
