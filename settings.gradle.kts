@@ -18,5 +18,6 @@ dependencyResolutionManagement {
 rootProject.name = "kopus-project"
 include(
     ":kopus",
-    ":example:composeApp"
+    ":example:shared",
+    ":example:androidApp"
 )
