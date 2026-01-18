@@ -28,7 +28,7 @@ WORKDIR /build
 #    subsequent stages fast and layers small.
 # ----------------------------------------------------------------------------
 FROM base AS opus-src
-RUN git clone --depth=1 --branch v1.6 https://github.com/xiph/opus.git /build/opus
+RUN git clone --depth=1 --branch v1.6.1 https://github.com/xiph/opus.git /build/opus
 
 WORKDIR /build/opus
 # Run autogen exactly once here – safe because it merely generates the
