@@ -19,8 +19,13 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
     }
 
     actual fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: ShortArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
     ): Int {
         return nativeDecodeShortOffset(
             handle, inData, inDataOffset, len, outPcm, outPcmOffset, frameSize, if (decodeFec) 1 else 0
@@ -28,8 +33,13 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
     }
 
     actual fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: FloatArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
     ): Int {
         return nativeDecodeFloatOffset(
             handle, inData, inDataOffset, len, outPcm, outPcmOffset, frameSize, if (decodeFec) 1 else 0
@@ -49,7 +59,7 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
 
     private external fun nativeDecodeShortOffset(
         h: Long,
-        inData: ByteArray,
+        inData: ByteArray?,
         inDataOffset: Int,
         len: Int,
         outPcm: ShortArray,
@@ -60,7 +70,7 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
 
     private external fun nativeDecodeFloatOffset(
         h: Long,
-        inData: ByteArray,
+        inData: ByteArray?,
         inDataOffset: Int,
         len: Int,
         outPcm: FloatArray,

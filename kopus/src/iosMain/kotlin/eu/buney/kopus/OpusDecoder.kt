@@ -30,45 +30,65 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
     }
 
     actual fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: ShortArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
     ): Int =
-        inData.usePinned { pinnedIn ->
-            outPcm.usePinned { pinnedOut ->
-                val inPtr = pinnedIn.addressOf(inDataOffset)
-                val outPtr = pinnedOut.addressOf(outPcmOffset)
-                val decoded = opus_decode(
-                    ptr,
-                    inPtr.reinterpret(),
-                    len,
-                    outPtr,
-                    frameSize,
-                    if (decodeFec) 1 else 0
-                )
-                chk(decoded)
-                decoded
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_decode(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_decode(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
+
+            chk(decoded)
+            decoded
         }
 
     actual fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: FloatArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
     ): Int =
-        inData.usePinned { pinnedIn ->
-            outPcm.usePinned { pinnedOut ->
-                val inPtr = pinnedIn.addressOf(inDataOffset)
-                val outPtr = pinnedOut.addressOf(outPcmOffset)
-                val decoded = opus_decode_float(
-                    ptr,
-                    inPtr.reinterpret(),
-                    len,
-                    outPtr,
-                    frameSize,
-                    if (decodeFec) 1 else 0
-                )
-                chk(decoded)
-                decoded
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_decode_float(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_decode_float(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
+
+            chk(decoded)
+            decoded
         }
 
 

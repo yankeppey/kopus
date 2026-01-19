@@ -18,11 +18,8 @@ import kotlin.test.fail
  * Decoder fuzzing tests ported from native libopus test_opus_decode.c
  *
  * These tests verify that the Opus decoder handles various input conditions
- * correctly, including all valid mode combinations, invalid inputs, and
- * deterministic behavior.
- *
- * Note: PLC (Packet Loss Concealment) tests are not included because the
- * Kopus JNI/cinterop layer does not support NULL packet decoding.
+ * correctly, including all valid mode combinations, invalid inputs,
+ * deterministic behavior, and PLC (Packet Loss Concealment).
  */
 class OpusDecoderFuzzTest {
 
@@ -60,12 +57,13 @@ class OpusDecoderFuzzTest {
     /**
      * Helper to safely decode, normalizing cross-platform error handling.
      * iOS throws exceptions while JVM returns negative error codes.
+     * Accepts nullable packet to support PLC testing.
      *
      * @return Number of decoded samples on success, null on failure
      */
     private fun safeDecodeOrNull(
         decoder: OpusDecoder,
-        packet: ByteArray,
+        packet: ByteArray?,
         offset: Int,
         len: Int,
         outBuf: ShortArray,
@@ -756,6 +754,315 @@ class OpusDecoderFuzzTest {
 
                 println("[$name] Requested bandwidth $bandwidth, detected $detectedBandwidth")
             }
+
+        } finally {
+            encoder.close()
+            decoder.close()
+        }
+    }
+
+    /**
+     * Test PLC (Packet Loss Concealment) on a fresh decoder.
+     *
+     * Ported from test_opus_decode.c lines 111-131:
+     * Tests PLC behavior on a freshly created decoder before any packets
+     * have been decoded. This is a key test from the original C test suite.
+     */
+    @Test
+    fun testPLCOnFreshDecoder() {
+        // Test PLC on fresh decoders for all sample rate/channel combinations
+        for (sampleRate in SAMPLE_RATES) {
+            val factor = 48000 / sampleRate
+            for (channels in 1..2) {
+                val decoder = OpusDecoder(sampleRate, channels)
+
+                try {
+                    val outBuf = ShortArray(MAX_FRAME_SAMP * channels)
+
+                    // Test PLC on a fresh decoder (2.5ms = 120 samples at 48kHz)
+                    val plcFrameSize = 120 / factor
+                    val outSamples = decoder.decode(outPcm = outBuf, frameSize = plcFrameSize)
+                    assertEquals(plcFrameSize, outSamples,
+                        "[$sampleRate Hz, $channels ch] Fresh decoder PLC should return $plcFrameSize samples")
+
+                    // Verify OPUS_GET_LAST_PACKET_DURATION
+                    val lastDuration = decoder.getLastPacketDuration()
+                    assertEquals(plcFrameSize, lastDuration,
+                        "[$sampleRate Hz, $channels ch] Last packet duration should match")
+
+                } finally {
+                    decoder.close()
+                }
+            }
+        }
+
+        println("Fresh decoder PLC test passed for all configurations")
+    }
+
+    /**
+     * Test PLC with invalid frame sizes.
+     *
+     * Ported from test_opus_decode.c lines 117-119:
+     * Frame sizes that aren't multiples of 2.5ms should return an error.
+     */
+    @Test
+    fun testPLCInvalidFrameSize() {
+        for (sampleRate in SAMPLE_RATES) {
+            val factor = 48000 / sampleRate
+            val decoder = OpusDecoder(sampleRate, 2)
+
+            try {
+                val outBuf = ShortArray(MAX_FRAME_SAMP * 2)
+
+                // Test on a size which isn't a multiple of 2.5ms
+                // Valid 2.5ms frame size is 120/factor, so add 2 to make it invalid
+                val invalidFrameSize = 120 / factor + 2
+
+                val result = safeDecodeOrNull(
+                    decoder, null, 0, 0, outBuf, invalidFrameSize
+                )
+
+                // Should return error (null from our safe wrapper, or negative value)
+                assertTrue(result == null || result < 0,
+                    "[$sampleRate Hz] PLC with invalid frame size $invalidFrameSize should fail")
+
+            } finally {
+                decoder.close()
+            }
+        }
+
+        println("PLC invalid frame size test passed")
+    }
+
+    /**
+     * Test PLC after decoding real packets (6 consecutive PLC frames).
+     *
+     * Ported from test_opus_decode.c lines 204-228:
+     * After decoding real packets, run PLC for 6 frames to get better PLC coverage,
+     * then test PLC at 2.5ms as a drift correction simulation.
+     */
+    @Test
+    fun testPLCAfterRealPackets() {
+        initSeed(11111u)
+
+        for (sampleRate in SAMPLE_RATES) {
+            val factor = 48000 / sampleRate
+            for (channels in 1..2) {
+                val encoder = OpusEncoder(sampleRate, channels, OpusApplication.Audio)
+                val decoder = OpusDecoder(sampleRate, channels)
+
+                try {
+                    // Generate and encode a test packet
+                    val frameSize = sampleRate / 50  // 20ms
+                    val inBuf = ShortArray(frameSize * channels)
+                    generateMusic(inBuf, frameSize, channels)
+
+                    val packet = ByteArray(MAX_PACKET)
+                    val len = encoder.encode(inBuf, 0, frameSize, packet, 0, MAX_PACKET)
+                    assertTrue(len > 0, "Encoding failed")
+
+                    // Decode real packet
+                    val outBuf = ShortArray(MAX_FRAME_SAMP * channels)
+                    val decoded = decoder.decode(packet, 0, len, outBuf, 0, MAX_FRAME_SAMP, false)
+                    assertTrue(decoded > 0, "Decoding failed")
+
+                    val expectedSamples = decoded
+
+                    // Run PLC for 6 frames (matching C test)
+                    for (j in 0 until 6) {
+                        val plcSamples = decoder.decode(outPcm = outBuf, frameSize = expectedSamples)
+                        assertEquals(expectedSamples, plcSamples,
+                            "[$sampleRate Hz, $channels ch] PLC frame $j should return $expectedSamples samples")
+
+                        val dur = decoder.getLastPacketDuration()
+                        assertEquals(plcSamples, dur,
+                            "[$sampleRate Hz, $channels ch] Last packet duration should match PLC samples")
+                    }
+
+                    // Run PLC at 2.5ms as a drift correction simulation
+                    val driftCorrectionSize = 120 / factor
+                    if (expectedSamples != driftCorrectionSize) {
+                        val driftSamples = decoder.decode(outPcm = outBuf, frameSize = driftCorrectionSize)
+                        assertEquals(driftCorrectionSize, driftSamples,
+                            "[$sampleRate Hz, $channels ch] Drift correction PLC should return $driftCorrectionSize samples")
+
+                        val dur = decoder.getLastPacketDuration()
+                        assertEquals(driftSamples, dur,
+                            "[$sampleRate Hz, $channels ch] Drift correction duration should match")
+                    }
+
+                } finally {
+                    encoder.close()
+                    decoder.close()
+                }
+            }
+        }
+
+        println("PLC after real packets test passed for all configurations")
+    }
+
+    /**
+     * Test PLC with FEC flag variations.
+     *
+     * Ported from test_opus_decode.c lines 329-333:
+     * Test PLC with both fec=0 and fec=1 (decodeFec parameter).
+     */
+    @Test
+    fun testPLCWithFEC() {
+        initSeed(22222u)
+
+        val sampleRate = 48000
+        val channels = 2
+        val frameSize = 960
+
+        val encoder = OpusEncoder(sampleRate, channels, OpusApplication.Audio)
+        val decoder = OpusDecoder(sampleRate, channels)
+
+        try {
+            // Generate and encode a test packet
+            val inBuf = ShortArray(frameSize * channels)
+            generateMusic(inBuf, frameSize, channels)
+
+            val packet = ByteArray(MAX_PACKET)
+            val len = encoder.encode(inBuf, 0, frameSize, packet, 0, MAX_PACKET)
+
+            // Decode the real packet first
+            val outBuf = ShortArray(MAX_FRAME_SAMP * channels)
+            decoder.decode(packet, 0, len, outBuf, 0, MAX_FRAME_SAMP, false)
+
+            // Test PLC with decodeFec = true
+            // In the C test: opus_decode(decbak, 0, 0, outbuf, MAX_FRAME_SAMP, 1)
+            val plcWithFec = decoder.decode(
+                inData = null,
+                outPcm = outBuf,
+                frameSize = MAX_FRAME_SAMP,
+                decodeFec = true
+            )
+            assertTrue(plcWithFec >= 20,
+                "PLC with FEC=true should return at least 20 samples, got $plcWithFec")
+
+            // Reset and test PLC with decodeFec = false
+            decoder.resetState()
+            decoder.decode(packet, 0, len, outBuf, 0, MAX_FRAME_SAMP, false)
+
+            val plcWithoutFec = decoder.decode(
+                inData = null,
+                outPcm = outBuf,
+                frameSize = MAX_FRAME_SAMP,
+                decodeFec = false
+            )
+            assertTrue(plcWithoutFec >= 20,
+                "PLC with FEC=false should return at least 20 samples, got $plcWithoutFec")
+
+            println("PLC with FEC test passed: fec=true returned $plcWithFec, fec=false returned $plcWithoutFec")
+
+        } finally {
+            encoder.close()
+            decoder.close()
+        }
+    }
+
+    /**
+     * Test PLC with float output format.
+     */
+    @Test
+    fun testPLCFloat() {
+        initSeed(33333u)
+
+        val sampleRate = 48000
+        val channels = 2
+        val frameSize = 960
+
+        val encoder = OpusEncoder(sampleRate, channels, OpusApplication.Audio)
+        val decoder = OpusDecoder(sampleRate, channels)
+
+        try {
+            val inBuf = ShortArray(frameSize * channels)
+            generateMusic(inBuf, frameSize, channels)
+
+            val packet = ByteArray(MAX_PACKET)
+            val len = encoder.encode(inBuf, 0, frameSize, packet, 0, MAX_PACKET)
+
+            // Prime decoder with real audio using float decode
+            val outBuf = FloatArray(frameSize * channels)
+            decoder.decode(packet, 0, len, outBuf, 0, frameSize, false)
+
+            // Test PLC with float output
+            val plcBuf = FloatArray(frameSize * channels)
+            val plcSamples = decoder.decode(outPcm = plcBuf, frameSize = frameSize)
+
+            assertEquals(frameSize, plcSamples, "Float PLC should generate $frameSize samples")
+
+            // Verify we got non-zero audio
+            var hasNonZero = false
+            for (sample in plcBuf) {
+                if (sample != 0f) {
+                    hasNonZero = true
+                    break
+                }
+            }
+            assertTrue(hasNonZero, "Float PLC should generate non-zero audio")
+
+            println("Float PLC test passed: generated $plcSamples samples")
+
+        } finally {
+            encoder.close()
+            decoder.close()
+        }
+    }
+
+    /**
+     * Test consecutive PLC calls (multiple lost packets).
+     *
+     * Opus gradually fades the concealment audio when multiple consecutive
+     * packets are lost, eventually producing silence.
+     */
+    @Test
+    fun testConsecutivePLC() {
+        initSeed(44444u)
+
+        val sampleRate = 48000
+        val channels = 2
+        val frameSize = 960
+
+        val encoder = OpusEncoder(sampleRate, channels, OpusApplication.Audio)
+        val decoder = OpusDecoder(sampleRate, channels)
+
+        try {
+            // Generate loud audio to prime the decoder
+            val inBuf = ShortArray(frameSize * channels)
+            generateMusic(inBuf, frameSize, channels)
+
+            val packet = ByteArray(MAX_PACKET)
+            val len = encoder.encode(inBuf, 0, frameSize, packet, 0, MAX_PACKET)
+
+            // Decode several real packets to build up decoder state
+            val outBuf = ShortArray(frameSize * channels)
+            repeat(5) {
+                decoder.decode(packet, 0, len, outBuf, 0, frameSize, false)
+            }
+
+            // Simulate multiple consecutive lost packets (10 frames)
+            val plcBuf = ShortArray(frameSize * channels)
+
+            repeat(10) { i ->
+                val samples = decoder.decode(outPcm = plcBuf, frameSize = frameSize)
+                assertEquals(frameSize, samples, "PLC iteration $i should return $frameSize samples")
+
+                // Verify duration matches
+                val dur = decoder.getLastPacketDuration()
+                assertEquals(samples, dur, "PLC iteration $i duration should match samples")
+
+                // Calculate energy of this frame
+                var energy = 0L
+                for (sample in plcBuf) {
+                    energy += sample.toLong() * sample.toLong()
+                }
+
+                println("PLC frame $i: energy = $energy")
+            }
+
+            println("Consecutive PLC test passed")
 
         } finally {
             encoder.close()

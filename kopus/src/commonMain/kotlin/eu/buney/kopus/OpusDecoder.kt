@@ -47,8 +47,13 @@ expect class OpusDecoder(
      * @return The number of decoded samples (per channel) on success or a negative error code on failure
      */
     fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: ShortArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray? = null,
+        inDataOffset: Int = 0,
+        len: Int = 0,
+        outPcm: ShortArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int,
+        decodeFec: Boolean = false
     ): Int
 
     /**
@@ -66,8 +71,13 @@ expect class OpusDecoder(
      * @return The number of decoded samples (per channel) on success or a negative error code on failure
      */
     fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: FloatArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray? = null,
+        inDataOffset: Int = 0,
+        len: Int = 0,
+        outPcm: FloatArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int,
+        decodeFec: Boolean = false
     ): Int
 
     /**
