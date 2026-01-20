@@ -187,6 +187,19 @@ jobs:
       - name: Build macOS JNI Libraries
         run: ./scripts/build_opus_jni.sh
 
+      - name: Run JVM Tests
+        run: ./gradlew :kopus:jvmTest --no-configuration-cache
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jvm-test-results
+          path: |
+            kopus/build/reports/tests/jvmTest/
+            kopus/build/test-results/jvmTest/
+          retention-days: 7
+
       - name: Publish All Platforms to Maven Local
         run: ./gradlew publishToMavenLocal -Pci.skip.native.build --no-configuration-cache
         env:
