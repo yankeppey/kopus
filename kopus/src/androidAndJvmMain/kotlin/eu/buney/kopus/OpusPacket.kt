@@ -41,6 +41,9 @@ actual object OpusPacket {
     actual fun unpadMultistream(data: ByteArray, len: Int, nbStreams: Int): Int =
         nativeUnpadMultistream(data, len, nbStreams)
 
+    actual fun parse(packet: ByteArray, len: Int): PacketFrameInfo? =
+        nativeParse(packet, len)
+
     private external fun nativeGetBandwidth(data: ByteArray): Int
     private external fun nativeGetSamplesPerFrame(data: ByteArray, sampleRate: Int): Int
     private external fun nativeGetNbChannels(data: ByteArray): Int
@@ -51,4 +54,5 @@ actual object OpusPacket {
     private external fun nativeUnpad(data: ByteArray, len: Int): Int
     private external fun nativePadMultistream(data: ByteArray, len: Int, newLen: Int, nbStreams: Int): Int
     private external fun nativeUnpadMultistream(data: ByteArray, len: Int, nbStreams: Int): Int
+    private external fun nativeParse(packet: ByteArray, len: Int): PacketFrameInfo?
 }

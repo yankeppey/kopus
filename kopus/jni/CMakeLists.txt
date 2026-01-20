@@ -9,9 +9,12 @@ set(JNI_SOURCES
     opus_jni.c
     opus_decoder_jni.c
     opus_opus_jni.c
+    opus_packet_jni.c
     opus_repacketizer_jni.c
     opus_multistream_encoder_jni.c
     opus_multistream_decoder_jni.c
+    opus_projection_encoder_jni.c
+    opus_projection_decoder_jni.c
 )
 
 # DRED JNI sources (only compiled for full variant)

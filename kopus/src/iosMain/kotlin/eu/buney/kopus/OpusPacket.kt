@@ -9,10 +9,19 @@
 
 package eu.buney.kopus
 
+import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.get
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.value
+import opus.c.opus_int16Var
 import opus.c.opus_multistream_packet_pad
 import opus.c.opus_multistream_packet_unpad
 import opus.c.opus_packet_get_bandwidth
@@ -22,7 +31,9 @@ import opus.c.opus_packet_get_nb_samples
 import opus.c.opus_packet_get_samples_per_frame
 import opus.c.opus_packet_has_lbrr
 import opus.c.opus_packet_pad
+import opus.c.opus_packet_parse
 import opus.c.opus_packet_unpad
+import platform.posix.int32_tVar
 
 actual object OpusPacket {
 
@@ -75,4 +86,53 @@ actual object OpusPacket {
         data.usePinned { pinned ->
             opus_multistream_packet_unpad(pinned.addressOf(0).reinterpret(), len, nbStreams)
         }
+
+    actual fun parse(packet: ByteArray, len: Int): PacketFrameInfo? {
+        if (len < 1) return null
+
+        return packet.usePinned { pinned ->
+            memScoped {
+                val dataPtr = pinned.addressOf(0).reinterpret<UByteVar>()
+                val tocVar = alloc<UByteVar>()
+                val framesArray = allocArray<CPointerVar<UByteVar>>(48)
+                val sizesArray = allocArray<opus_int16Var>(48)
+                val payloadOffsetVar = alloc<int32_tVar>()
+
+                val numFrames = opus_packet_parse(
+                    dataPtr,
+                    len,
+                    tocVar.ptr,
+                    framesArray,
+                    sizesArray,
+                    payloadOffsetVar.ptr
+                )
+
+                if (numFrames < 1) {
+                    return@usePinned null
+                }
+
+                // Convert frame pointers to offsets
+                val frameOffsets = IntArray(numFrames) { i ->
+                    val framePtr = framesArray[i]
+                    if (framePtr != null) {
+                        (framePtr.rawValue.toLong() - dataPtr.rawValue.toLong()).toInt()
+                    } else {
+                        0
+                    }
+                }
+
+                val frameSizes = IntArray(numFrames) { i ->
+                    sizesArray[i].toInt()
+                }
+
+                PacketFrameInfo(
+                    toc = tocVar.value.toByte(),
+                    numFrames = numFrames,
+                    frameOffsets = frameOffsets,
+                    frameSizes = frameSizes,
+                    payloadOffset = payloadOffsetVar.value
+                )
+            }
+        }
+    }
 }

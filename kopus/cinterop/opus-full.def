@@ -1,4 +1,4 @@
-headers      = opus.h opus_multistream.h
+headers      = opus.h opus_multistream.h opus_projection.h
 headerFilter = **
 package      = opus.c
 

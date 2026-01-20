@@ -55,7 +55,7 @@ fun reencode(pcm: ShortArray, sampleRate: Int, frameSize: Int, application: Opus
 fun App() {
     MaterialTheme {
         var selectedTab by remember { mutableStateOf(0) }
-        val tabs = listOf("Encoding", "PLC", "Surround")
+        val tabs = listOf("Encoding", "PLC", "Surround", "Ambisonics")
 
         Column(
             modifier = Modifier
@@ -77,6 +77,7 @@ fun App() {
                 0 -> EncodingScreen()
                 1 -> PlcScreen()
                 2 -> SurroundScreen()
+                3 -> AmbisonicsScreen()
             }
         }
     }
