@@ -183,6 +183,35 @@ tasks.named<Jar>("jvmJar") {
     }
 }
 
+// Configure JVM tests to find native libraries
+tasks.named<Test>("jvmTest") {
+    // Depend on native library build
+    if (!project.hasProperty("ci.skip.native.build")) {
+        dependsOn(buildJniMacos)
+    }
+
+    // Determine architecture-specific library path
+    val arch = System.getProperty("os.arch").lowercase()
+    val archPath = if (arch.contains("aarch") || arch.contains("arm")) "arm64" else "x86_64"
+    val nativeLibPath = buildJniMacosFolder.get().asFile.resolve(archPath).absolutePath
+
+    // Set java.library.path so System.loadLibrary can find the native library
+    systemProperty("java.library.path", nativeLibPath)
+
+    // Show test output in console
+    testLogging {
+        events("passed", "skipped", "failed", "standardOut", "standardError")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+
+    // Generate plain text reports in addition to HTML
+    reports {
+        junitXml.required.set(true)  // Machine-readable XML (for CI)
+        html.required.set(true)       // HTML reports
+    }
+}
+
 val cleanBuildOpusAndroid by tasks.registering(Delete::class) {
     delete(buildOpusAndroidDir)
 }
