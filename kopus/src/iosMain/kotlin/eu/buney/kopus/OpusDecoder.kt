@@ -195,4 +195,9 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
             )
         }
     }
+
+    actual fun getNbSamples(packet: ByteArray, len: Int): Int =
+        packet.usePinned { pinned ->
+            opus_decoder_get_nb_samples(ptr, pinned.addressOf(0).reinterpret(), len)
+        }
 }

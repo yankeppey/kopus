@@ -113,6 +113,10 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         return nativeDecodeDred24(handle, dred.handle, dredOffset, outPcm, outPcmOffset, frameSize)
     }
 
+    actual fun getNbSamples(packet: ByteArray, len: Int): Int {
+        return nativeGetNbSamples(handle, packet, len)
+    }
+
     private external fun nativeCreate(fs: Int, ch: Int): Long
     private external fun nativeDestroy(h: Long)
 
@@ -178,4 +182,6 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         outPcmOffset: Int,
         frameSize: Int
     ): Int
+
+    private external fun nativeGetNbSamples(h: Long, packet: ByteArray, len: Int): Int
 }

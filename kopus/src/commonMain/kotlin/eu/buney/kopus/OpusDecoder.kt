@@ -192,4 +192,19 @@ expect class OpusDecoder(
         outPcmOffset: Int = 0,
         frameSize: Int
     ): Int
+
+    /**
+     * Gets the number of samples of an Opus packet using this decoder's sample rate.
+     *
+     * Mirrors the C function `opus_decoder_get_nb_samples`.
+     *
+     * This is similar to [OpusPacket.getNbSamples] but uses the decoder's configured
+     * sample rate instead of requiring one as a parameter.
+     *
+     * @param packet Opus packet data
+     * @param len Length of the packet in bytes
+     * @return Number of samples, or [OPUS_BAD_ARG] if insufficient data,
+     *         or [OPUS_INVALID_PACKET] if corrupted
+     */
+    fun getNbSamples(packet: ByteArray, len: Int = packet.size): Int
 }

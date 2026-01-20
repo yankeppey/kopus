@@ -5,8 +5,8 @@
 
 
 #define PKG eu_buney_kopus
-#define JNI_GLUE(pkg, cls, name) Java_##pkg##_##cls##_##name
-#define JNI_FN(pkg, cls, name)   JNI_GLUE(pkg, cls, name)
+#define JNI_PASTE(p,c,m) Java_##p##_##c##_##m
+#define JNI_FN(p,c,m)    JNI_PASTE(p,c,m)
 
 
 JNIEXPORT jlong JNICALL
@@ -135,4 +135,19 @@ JNI_FN(PKG, OpusDecoder, nativeCtlQuery)(JNIEnv *env, jobject thiz,
     } else {
         return result;
     }
+}
+
+JNIEXPORT jint JNICALL
+JNI_FN(PKG, OpusDecoder, nativeGetNbSamples)(JNIEnv *env, jobject thiz,
+                                              jlong ptr, jbyteArray packet, jint len)
+{
+    if (!ptr || packet == NULL) return OPUS_BAD_ARG;
+    OpusDecoder *decoder = (OpusDecoder *)ptr;
+
+    jbyte* buf = (*env)->GetByteArrayElements(env, packet, NULL);
+    if (buf == NULL) return OPUS_BAD_ARG;
+
+    int result = opus_decoder_get_nb_samples(decoder, (const unsigned char*)buf, len);
+    (*env)->ReleaseByteArrayElements(env, packet, buf, JNI_ABORT);
+    return result;
 }
