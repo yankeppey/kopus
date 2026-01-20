@@ -476,4 +476,84 @@ class OpusApiTest {
 
         println("    opus_multistream_surround_encoder_create() invalid family ... OK.")
     }
+
+    // ==================== Boolean CTL Roundtrip Tests ====================
+
+    /**
+     * Tests Boolean CTL parameter roundtrip for all boolean-ish encoder CTLs.
+     */
+    @Test
+    fun testEncoderBooleanCtlRoundtrip() {
+        val encoder = OpusEncoder(48000, 2, OpusApplication.Audio)
+
+        try {
+            // Test VBR
+            encoder.setVBR(false)
+            assertEquals(false, encoder.getVBR(), "VBR should be false")
+            encoder.setVBR(true)
+            assertEquals(true, encoder.getVBR(), "VBR should be true")
+
+            // Test VBR Constraint
+            encoder.setVBRConstraint(false)
+            assertEquals(false, encoder.getVBRConstraint(), "VBRConstraint should be false")
+            encoder.setVBRConstraint(true)
+            assertEquals(true, encoder.getVBRConstraint(), "VBRConstraint should be true")
+
+            // Test Inband FEC
+            encoder.setInbandFEC(false)
+            assertEquals(false, encoder.getInbandFEC(), "InbandFEC should be false")
+            encoder.setInbandFEC(true)
+            assertEquals(true, encoder.getInbandFEC(), "InbandFEC should be true")
+
+            // Test DTX
+            encoder.setDTX(false)
+            assertEquals(false, encoder.getDTX(), "DTX should be false")
+            encoder.setDTX(true)
+            assertEquals(true, encoder.getDTX(), "DTX should be true")
+
+            // Test Prediction Disabled
+            encoder.setPredictionDisabled(false)
+            assertEquals(false, encoder.getPredictionDisabled(), "PredictionDisabled should be false")
+            encoder.setPredictionDisabled(true)
+            assertEquals(true, encoder.getPredictionDisabled(), "PredictionDisabled should be true")
+
+            // Test Phase Inversion Disabled
+            encoder.setPhaseInversionDisabled(false)
+            assertEquals(false, encoder.getPhaseInversionDisabled(), "PhaseInversionDisabled should be false")
+            encoder.setPhaseInversionDisabled(true)
+            assertEquals(true, encoder.getPhaseInversionDisabled(), "PhaseInversionDisabled should be true")
+
+            println("    Encoder Boolean CTL roundtrip ...................... OK.")
+
+        } finally {
+            encoder.close()
+        }
+    }
+
+    /**
+     * Tests Boolean CTL parameter roundtrip for all boolean-ish decoder CTLs.
+     */
+    @Test
+    fun testDecoderBooleanCtlRoundtrip() {
+        val decoder = OpusDecoder(48000, 2)
+
+        try {
+            // Test Phase Inversion Disabled
+            decoder.setPhaseInversionDisabled(false)
+            assertEquals(false, decoder.getPhaseInversionDisabled(), "PhaseInversionDisabled should be false")
+            decoder.setPhaseInversionDisabled(true)
+            assertEquals(true, decoder.getPhaseInversionDisabled(), "PhaseInversionDisabled should be true")
+
+            // Test Ignore Extensions
+            decoder.setIgnoreExtensions(false)
+            assertEquals(false, decoder.getIgnoreExtensions(), "IgnoreExtensions should be false")
+            decoder.setIgnoreExtensions(true)
+            assertEquals(true, decoder.getIgnoreExtensions(), "IgnoreExtensions should be true")
+
+            println("    Decoder Boolean CTL roundtrip ...................... OK.")
+
+        } finally {
+            decoder.close()
+        }
+    }
 }

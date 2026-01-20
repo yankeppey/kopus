@@ -71,6 +71,10 @@ class OpusEncodeTest {
         return array[(fastRand() % array.size.toUInt()).toInt()]
     }
 
+    private fun randSampleBoolean(array: BooleanArray): Boolean {
+        return array[(fastRand() % array.size.toUInt()).toInt()]
+    }
+
     /**
      * Generates synthetic "music" for testing, matching the original C implementation.
      *
@@ -659,8 +663,8 @@ class OpusEncodeTest {
         )
         val bitrates = intArrayOf(6000, 12000, 16000, 24000, 32000, 48000, 64000, 96000, 510000, OPUS_AUTO, OPUS_BITRATE_MAX)
         val forceChannels = intArrayOf(OPUS_AUTO, OPUS_AUTO, 1, 2)
-        val useVbr = intArrayOf(0, 1, 1)
-        val vbrConstraints = intArrayOf(0, 1, 1)
+        val useVbr = booleanArrayOf(false, true, true)
+        val vbrConstraints = booleanArrayOf(false, true, true)
         val complexities = intArrayOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
         val maxBandwidths = intArrayOf(
             OPUS_BANDWIDTH_NARROWBAND, OPUS_BANDWIDTH_MEDIUMBAND,
@@ -668,11 +672,11 @@ class OpusEncodeTest {
             OPUS_BANDWIDTH_FULLBAND, OPUS_BANDWIDTH_FULLBAND
         )
         val signals = intArrayOf(OPUS_AUTO, OPUS_AUTO, OPUS_SIGNAL_VOICE, OPUS_SIGNAL_MUSIC)
-        val inbandFecs = intArrayOf(0, 0, 1)
+        val inbandFecs = booleanArrayOf(false, false, true)
         val packetLossPercs = intArrayOf(0, 1, 2, 5)
         val lsbDepths = intArrayOf(8, 24)
-        val predictionDisabled = intArrayOf(0, 0, 1)
-        val useDtx = intArrayOf(0, 1)
+        val predictionDisabled = booleanArrayOf(false, false, true)
+        val useDtx = booleanArrayOf(false, true)
         val frameSizesMsX2 = intArrayOf(5, 10, 20, 40, 80, 120, 160, 200, 240)
 
         for (i in 0 until numEncoders) {
@@ -691,16 +695,16 @@ class OpusEncodeTest {
                 for (j in 0 until numSettingChanges) {
                     val bitrate = randSample(bitrates)
                     var forceChannel = randSample(forceChannels)
-                    val vbr = randSample(useVbr)
-                    val vbrConstraint = randSample(vbrConstraints)
+                    val vbr = randSampleBoolean(useVbr)
+                    val vbrConstraint = randSampleBoolean(vbrConstraints)
                     val complexity = randSample(complexities)
                     val maxBw = randSample(maxBandwidths)
                     val sig = randSample(signals)
-                    val inbandFec = randSample(inbandFecs)
+                    val inbandFec = randSampleBoolean(inbandFecs)
                     val pktLoss = randSample(packetLossPercs)
                     val lsbDepth = randSample(lsbDepths)
-                    val predDisabled = randSample(predictionDisabled)
-                    val dtx = randSample(useDtx)
+                    val predDisabled = randSampleBoolean(predictionDisabled)
+                    val dtx = randSampleBoolean(useDtx)
                     val frameSizeMsX2 = randSample(frameSizesMsX2)
                     val frameSize = frameSizeToSamples(frameSizeMsX2, sampleRate)
                     val frameSizeEnum = getFrameSizeEnum(frameSize, sampleRate)
@@ -796,7 +800,7 @@ class OpusEncodeTest {
             try {
                 encoder.setBitrate(config.bitrate)
                 encoder.setComplexity(config.complexity)
-                encoder.setVBR(if (config.vbr) 1 else 0)
+                encoder.setVBR(config.vbr)
 
                 val numSamples = config.sampleRate
                 val inBuf = ShortArray(numSamples * config.channels)
@@ -1538,7 +1542,7 @@ class OpusEncodeTest {
         )
 
         try {
-            encoder.setInbandFEC(1)
+            encoder.setInbandFEC(true)
             encoder.setPacketLossPerc(10)
 
             val numSamples = sampleRate
@@ -1654,7 +1658,7 @@ class OpusEncodeTest {
         )
 
         try {
-            encoder.setInbandFEC(1)
+            encoder.setInbandFEC(true)
             encoder.setPacketLossPerc(25)
 
             val numSamples = sampleRate

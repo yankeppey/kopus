@@ -33,19 +33,19 @@ fun OpusMultistreamDecoder.setGain(gain: Int): Int = ctl(OPUS_SET_GAIN_REQUEST, 
 fun OpusMultistreamDecoder.getGain(): Int = ctlQuery(OPUS_GET_GAIN_REQUEST)
 
 /**
- * If set to 1, disables the use of phase inversion for intensity stereo,
+ * If set to true, disables the use of phase inversion for intensity stereo,
  * improving the quality of mono downmixes, but slightly reducing normal
  * stereo quality.
- * @param disabled 0 = Enable phase inversion (default), 1 = Disable phase inversion
+ * @param disabled true = Disable phase inversion, false = Enable phase inversion (default)
  * @return OPUS_OK on success
  */
-fun OpusMultistreamDecoder.setPhaseInversionDisabled(disabled: Int): Int = ctl(OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST, disabled)
+fun OpusMultistreamDecoder.setPhaseInversionDisabled(disabled: Boolean): Int = ctl(OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST, if (disabled) 1 else 0)
 
 /**
  * Gets the decoder's configured phase inversion status.
- * @return 0 = Phase inversion enabled (default), 1 = Phase inversion disabled
+ * @return true = Phase inversion disabled, false = Phase inversion enabled (default)
  */
-fun OpusMultistreamDecoder.getPhaseInversionDisabled(): Int = ctlQuery(OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST)
+fun OpusMultistreamDecoder.getPhaseInversionDisabled(): Boolean = ctlQuery(OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST) == 1
 
 /**
  * Gets the duration (in samples) of the last packet successfully decoded or concealed.
@@ -95,6 +95,20 @@ fun OpusMultistreamDecoder.getBandwidth(): Int = ctlQuery(OPUS_GET_BANDWIDTH_REQ
  * @return OPUS_OK on success
  */
 fun OpusMultistreamDecoder.resetState(): Int = ctl(OPUS_RESET_STATE, 0)
+
+/**
+ * If set to true, the decoder will ignore all extensions found in the padding area
+ * (does not affect DRED, which is decoded separately).
+ * @param ignore true = Ignore extensions, false = Process extensions (default)
+ * @return OPUS_OK on success
+ */
+fun OpusMultistreamDecoder.setIgnoreExtensions(ignore: Boolean): Int = ctl(OPUS_SET_IGNORE_EXTENSIONS_REQUEST, if (ignore) 1 else 0)
+
+/**
+ * Gets whether the decoder is ignoring extensions.
+ * @return true = Ignoring extensions, false = Processing extensions
+ */
+fun OpusMultistreamDecoder.getIgnoreExtensions(): Boolean = ctlQuery(OPUS_GET_IGNORE_EXTENSIONS_REQUEST) == 1
 
 /**
  * Decodes a complete multistream Opus packet into PCM.

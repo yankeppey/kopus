@@ -288,7 +288,7 @@ class OpusDecodeTest {
             for (encoder in listOf(encoder1, encoder2)) {
                 encoder.setBitrate(64000)
                 encoder.setComplexity(5)
-                encoder.setVBR(0)  // Use CBR for determinism
+                encoder.setVBR(false)  // Use CBR for determinism
             }
 
             val packet1 = ByteArray(MAX_PACKET)
