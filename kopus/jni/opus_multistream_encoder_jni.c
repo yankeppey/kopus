@@ -131,6 +131,28 @@ JNI_FN(PKG, OpusMultistreamEncoder, nativeEncodeFloatOffset)(JNIEnv* env, jobjec
 }
 
 JNIEXPORT jint JNICALL
+JNI_FN(PKG, OpusMultistreamEncoder, nativeEncode24Offset)(JNIEnv* env, jobject thiz,
+                                                           jlong handle, jintArray pcmArr,
+                                                           jint pcmOffset, jint frameSize,
+                                                           jbyteArray outArr, jint outOffset,
+                                                           jint maxBytes)
+{
+    if (handle == 0L || pcmArr == NULL || outArr == NULL) return -1;
+
+    OpusMSEncoder* enc = (OpusMSEncoder*)handle;
+    jint* pcm = (*env)->GetIntArrayElements(env, pcmArr, NULL);
+    jbyte* out = (*env)->GetByteArrayElements(env, outArr, NULL);
+
+    int n = opus_multistream_encode24(enc, (const opus_int32*)(pcm + pcmOffset), frameSize,
+                                       (unsigned char*)(out + outOffset), maxBytes);
+
+    (*env)->ReleaseIntArrayElements(env, pcmArr, pcm, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, outArr, out, 0);
+
+    return n;
+}
+
+JNIEXPORT jint JNICALL
 JNI_FN(PKG, OpusMultistreamEncoder, nativeCtl)(JNIEnv* env, jobject thiz,
                                                 jlong handle, jint request, jint value)
 {

@@ -46,6 +46,20 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         )
     }
 
+    actual fun decode24(
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
+    ): Int {
+        return nativeDecode24Offset(
+            handle, inData, inDataOffset, len, outPcm, outPcmOffset, frameSize, if (decodeFec) 1 else 0
+        )
+    }
+
     actual fun ctl(request: Int, value: Int): Int {
         return nativeCtl(handle, request, value)
     }
@@ -74,6 +88,17 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         inDataOffset: Int,
         len: Int,
         outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Int
+    ): Int
+
+    private external fun nativeDecode24Offset(
+        h: Long,
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: IntArray,
         outPcmOffset: Int,
         frameSize: Int,
         decodeFec: Int

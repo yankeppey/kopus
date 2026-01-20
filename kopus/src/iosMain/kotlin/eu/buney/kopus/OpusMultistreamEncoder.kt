@@ -90,6 +90,25 @@ actual class OpusMultistreamEncoder private constructor(
         }
     }
 
+    actual fun encode24(
+        inPcm: IntArray, inPcmOffset: Int, frameSize: Int,
+        outData: ByteArray, outDataOffset: Int, maxDataBytes: Int
+    ): Int {
+        return inPcm.usePinned { pinnedPcm ->
+            outData.usePinned { pinnedOut ->
+                val pcmPtr = pinnedPcm.addressOf(inPcmOffset)
+                val outPtr = pinnedOut.addressOf(outDataOffset)
+                opus_multistream_encode24(
+                    ptr,
+                    pcmPtr,
+                    frameSize,
+                    outPtr.reinterpret(),
+                    maxDataBytes
+                )
+            }
+        }
+    }
+
     actual fun ctl(request: Int, value: Int): Int {
         return opus_multistream_encoder_ctl(ptr, request, value)
     }

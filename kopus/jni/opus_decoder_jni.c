@@ -85,6 +85,35 @@ JNI_FN(PKG, OpusDecoder, nativeDecodeFloatOffset)(JNIEnv* env, jobject thiz, jlo
 }
 
 JNIEXPORT jint JNICALL
+JNI_FN(PKG, OpusDecoder, nativeDecode24Offset)(JNIEnv* env, jobject thiz, jlong handle,
+                                                jbyteArray inData, jint inDataOffset, jint len,
+                                                jintArray outPcm, jint outPcmOffset, jint frameSize, jint decodeFec)
+{
+    if (handle == 0L || outPcm == NULL) return -1;
+
+    OpusDecoder* dec = (OpusDecoder*)handle;
+    jbyte* inBuf = NULL;
+    const unsigned char* pkt = NULL;
+
+    if (inData != NULL) {
+        inBuf = (*env)->GetByteArrayElements(env, inData, NULL);
+        pkt = (const unsigned char*)(inBuf + inDataOffset);
+    }
+
+    jint* outBuf = (*env)->GetIntArrayElements(env, outPcm, NULL);
+    opus_int32* pcm = (opus_int32*)(outBuf + outPcmOffset);
+
+    int samples = opus_decode24(dec, pkt, len, pcm, frameSize, decodeFec);
+
+    if (inBuf != NULL) {
+        (*env)->ReleaseByteArrayElements(env, inData, inBuf, JNI_ABORT);
+    }
+    (*env)->ReleaseIntArrayElements(env, outPcm, outBuf, 0);
+
+    return samples;
+}
+
+JNIEXPORT jint JNICALL
 JNI_FN(PKG, OpusDecoder, nativeCtl)(JNIEnv *env, jobject thiz,
                                    jlong ptr, jint request, jint value)
 {

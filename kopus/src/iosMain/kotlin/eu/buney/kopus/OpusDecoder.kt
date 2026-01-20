@@ -85,6 +85,36 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
             decoded
         }
 
+    actual fun decode24(
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
+    ): Int =
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_decode24(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_decode24(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
+            }
+
+            decoded
+        }
+
     actual fun ctl(request: Int, value: Int): Int {
         return opus_decoder_ctl(ptr, request, value)
     }

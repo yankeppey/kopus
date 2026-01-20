@@ -112,6 +112,25 @@ expect class OpusMultistreamEncoder(
     ): Int
 
     /**
+     * Encodes a multistream Opus frame from 24-bit integer input.
+     *
+     * Mirrors the C function `opus_multistream_encode24`.
+     *
+     * @param inPcm 24-bit input signal stored in 32-bit integers (interleaved for multiple channels).
+     *              Values should be in the range of 24-bit signed integers (-8388608 to 8388607).
+     * @param inPcmOffset Offset to use when reading the [inPcm] buffer
+     * @param frameSize The number of samples _per channel_ in the input signal
+     * @param outData Destination buffer for the output payload
+     * @param outDataOffset The offset to use when writing to the output data buffer
+     * @param maxDataBytes The maximum amount of space allocated for the output payload
+     * @return The length of the encoded packet (in bytes) on success or a negative error code on failure
+     */
+    fun encode24(
+        inPcm: IntArray, inPcmOffset: Int, frameSize: Int,
+        outData: ByteArray, outDataOffset: Int, maxDataBytes: Int = DEFAULT_MAX_BYTES
+    ): Int
+
+    /**
      * Releases resources associated with this encoder.
      *
      * Mirrors the C function `opus_multistream_encoder_destroy`.

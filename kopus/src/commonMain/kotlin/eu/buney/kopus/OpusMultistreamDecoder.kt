@@ -87,6 +87,30 @@ expect class OpusMultistreamDecoder(
     ): Int
 
     /**
+     * Decodes a multistream Opus packet into PCM audio using 24-bit integer format.
+     *
+     * Mirrors the C function `opus_multistream_decode24`.
+     *
+     * @param inData The input payload. Use null to indicate packet loss (PLC)
+     * @param inDataOffset The offset to use when reading the input payload
+     * @param len The number of bytes in the payload (the packet size)
+     * @param outPcm A buffer to put the output PCM as 24-bit values stored in 32-bit integers (interleaved for multiple channels)
+     * @param outPcmOffset The offset to use when writing to the output buffer
+     * @param frameSize The number of samples (per channel) of available space in the output PCM buffer
+     * @param decodeFec Indicates that we want to recreate the PREVIOUS (lost) packet using FEC data
+     * @return The number of decoded samples (per channel) on success or a negative error code on failure
+     */
+    fun decode24(
+        inData: ByteArray? = null,
+        inDataOffset: Int = 0,
+        len: Int = 0,
+        outPcm: IntArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int,
+        decodeFec: Boolean = false
+    ): Int
+
+    /**
      * Releases resources associated with this decoder.
      *
      * Mirrors the C function `opus_multistream_decoder_destroy`.

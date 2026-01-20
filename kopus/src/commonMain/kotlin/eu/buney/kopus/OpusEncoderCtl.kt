@@ -276,6 +276,12 @@ fun OpusEncoder.getLookahead(): Int = ctlQuery(OPUS_GET_LOOKAHEAD_REQUEST)
 fun OpusEncoder.getFinalRange(): Int = ctlQuery(OPUS_GET_FINAL_RANGE_REQUEST)
 
 /**
+ * Resets the codec state to be equivalent to a freshly initialized state.
+ * @return OPUS_OK on success
+ */
+fun OpusEncoder.resetState(): Int = ctl(OPUS_RESET_STATE, 0)
+
+/**
  * Gets the sampling rate the encoder was initialized with.
  * @return Sampling rate of encoder in Hz
  */

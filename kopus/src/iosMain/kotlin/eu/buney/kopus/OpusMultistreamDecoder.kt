@@ -101,6 +101,36 @@ actual class OpusMultistreamDecoder actual constructor(
             decoded
         }
 
+    actual fun decode24(
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
+    ): Int =
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_multistream_decode24(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_multistream_decode24(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
+            }
+
+            decoded
+        }
+
     actual fun ctl(request: Int, value: Int): Int {
         return opus_multistream_decoder_ctl(ptr, request, value)
     }
