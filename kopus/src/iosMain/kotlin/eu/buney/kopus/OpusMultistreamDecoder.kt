@@ -68,7 +68,6 @@ actual class OpusMultistreamDecoder actual constructor(
                 opus_multistream_decode(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
 
-            require(decoded >= 0) { "Opus multistream decode error $decoded" }
             decoded
         }
 
@@ -99,22 +98,18 @@ actual class OpusMultistreamDecoder actual constructor(
                 opus_multistream_decode_float(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
 
-            require(decoded >= 0) { "Opus multistream decode error $decoded" }
             decoded
         }
 
     actual fun ctl(request: Int, value: Int): Int {
-        return memScoped {
-            opus_multistream_decoder_ctl(ptr, request, value)
-        }
+        return opus_multistream_decoder_ctl(ptr, request, value)
     }
 
     actual fun ctlQuery(request: Int): Int {
         return memScoped {
             val valuePtr = alloc<IntVar>()
             val result = opus_multistream_decoder_ctl(ptr, request, valuePtr.ptr)
-            require(result >= 0) { "Opus multistream decoder CTL error $result" }
-            valuePtr.value
+            if (result >= 0) valuePtr.value else result
         }
     }
 }

@@ -46,7 +46,6 @@ actual class OpusEncoder actual constructor(
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                require(len >= 0) { "Opus encode error $len" }
                 len
             }
         }
@@ -60,31 +59,26 @@ actual class OpusEncoder actual constructor(
             outData.usePinned { pinnedOut ->
                 val pcmPtr = pinnedPcm.addressOf(inPcmOffset)
                 val outPtr = pinnedOut.addressOf(outDataOffset)
-                val len = opus_encode_float(
+                opus_encode_float(
                     ptr,
                     pcmPtr,
                     frameSize,
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                require(len >= 0) { "Opus encode error $len" }
-                len
             }
         }
     }
 
     actual fun ctl(request: Int, value: Int): Int {
-        return memScoped {
-            opus_encoder_ctl(ptr, request, value)
-        }
+        return opus_encoder_ctl(ptr, request, value)
     }
 
     actual fun ctlQuery(request: Int): Int {
         return memScoped {
             val valuePtr = alloc<IntVar>()
             val result = opus_encoder_ctl(ptr, request, valuePtr.ptr)
-            require(result >= 0) { "Opus encoder CTL error $result" }
-            valuePtr.value
+            if (result >= 0) valuePtr.value else result
         }
     }
 

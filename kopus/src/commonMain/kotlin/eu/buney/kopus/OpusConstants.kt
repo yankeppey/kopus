@@ -6,6 +6,16 @@
  */
 package eu.buney.kopus
 
+// Error codes
+const val OPUS_OK = 0
+const val OPUS_BAD_ARG = -1
+const val OPUS_BUFFER_TOO_SMALL = -2
+const val OPUS_INTERNAL_ERROR = -3
+const val OPUS_INVALID_PACKET = -4
+const val OPUS_UNIMPLEMENTED = -5
+const val OPUS_INVALID_STATE = -6
+const val OPUS_ALLOC_FAIL = -7
+
 // Encoder CTL request constants
 const val OPUS_SET_APPLICATION_REQUEST = 4000
 const val OPUS_GET_APPLICATION_REQUEST = 4001

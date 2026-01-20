@@ -79,6 +79,6 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         decodeFec: Int
     ): Int
 
-    external fun nativeCtl(h: Long, request: Int, value: Int): Int
-    external fun nativeCtlQuery(h: Long, request: Int): Int
+    private external fun nativeCtl(h: Long, request: Int, value: Int): Int
+    private external fun nativeCtlQuery(h: Long, request: Int): Int
 }

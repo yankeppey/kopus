@@ -74,6 +74,6 @@ actual class OpusEncoder actual constructor(
 
     private external fun nativeDestroy(h: Long)
 
-    external fun nativeCtl(h: Long, request: Int, value: Int): Int
-    external fun nativeCtlQuery(h: Long, request: Int): Int
+    private external fun nativeCtl(h: Long, request: Int, value: Int): Int
+    private external fun nativeCtlQuery(h: Long, request: Int): Int
 }

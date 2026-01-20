@@ -60,15 +60,13 @@ actual class OpusMultistreamEncoder private constructor(
             outData.usePinned { pinnedOut ->
                 val pcmPtr = pinnedPcm.addressOf(inPcmOffset)
                 val outPtr = pinnedOut.addressOf(outDataOffset)
-                val len = opus_multistream_encode(
+                opus_multistream_encode(
                     ptr,
                     pcmPtr,
                     frameSize,
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                require(len >= 0) { "Opus multistream encode error $len" }
-                len
             }
         }
     }
@@ -81,31 +79,26 @@ actual class OpusMultistreamEncoder private constructor(
             outData.usePinned { pinnedOut ->
                 val pcmPtr = pinnedPcm.addressOf(inPcmOffset)
                 val outPtr = pinnedOut.addressOf(outDataOffset)
-                val len = opus_multistream_encode_float(
+                opus_multistream_encode_float(
                     ptr,
                     pcmPtr,
                     frameSize,
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                require(len >= 0) { "Opus multistream encode error $len" }
-                len
             }
         }
     }
 
     actual fun ctl(request: Int, value: Int): Int {
-        return memScoped {
-            opus_multistream_encoder_ctl(ptr, request, value)
-        }
+        return opus_multistream_encoder_ctl(ptr, request, value)
     }
 
     actual fun ctlQuery(request: Int): Int {
         return memScoped {
             val valuePtr = alloc<IntVar>()
             val result = opus_multistream_encoder_ctl(ptr, request, valuePtr.ptr)
-            require(result >= 0) { "Opus multistream encoder CTL error $result" }
-            valuePtr.value
+            if (result >= 0) valuePtr.value else result
         }
     }
 

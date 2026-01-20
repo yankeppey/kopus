@@ -97,6 +97,6 @@ actual class OpusMultistreamDecoder actual constructor(
         decodeFec: Int
     ): Int
 
-    external fun nativeCtl(handle: Long, request: Int, value: Int): Int
-    external fun nativeCtlQuery(handle: Long, request: Int): Int
+    private external fun nativeCtl(handle: Long, request: Int, value: Int): Int
+    private external fun nativeCtlQuery(handle: Long, request: Int): Int
 }
