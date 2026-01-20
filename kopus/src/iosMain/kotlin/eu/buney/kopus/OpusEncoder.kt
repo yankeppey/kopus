@@ -9,10 +9,6 @@ package eu.buney.kopus
 import kotlinx.cinterop.*
 import opus.c.*
 
-private fun check(err: Int) {
-    require(err >= 0) { "Opus error $err" }
-}
-
 @OptIn(ExperimentalForeignApi::class)
 actual class OpusEncoder actual constructor(
     actual val sampleRate: Int,
@@ -27,7 +23,7 @@ actual class OpusEncoder actual constructor(
             val err = alloc<IntVar>()
             ptr = opus_encoder_create(sampleRate, channels, application.value, err.ptr)
                 ?: error("opus_encoder_create returned null")
-            check(err.value)
+            require(err.value >= 0) { "Opus encoder create error ${err.value}" }
         }
     }
 
@@ -50,7 +46,6 @@ actual class OpusEncoder actual constructor(
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                check(len)
                 len
             }
         }
@@ -64,31 +59,45 @@ actual class OpusEncoder actual constructor(
             outData.usePinned { pinnedOut ->
                 val pcmPtr = pinnedPcm.addressOf(inPcmOffset)
                 val outPtr = pinnedOut.addressOf(outDataOffset)
-                val len = opus_encode_float(
+                opus_encode_float(
                     ptr,
                     pcmPtr,
                     frameSize,
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                check(len)
-                len
+            }
+        }
+    }
+
+    actual fun encode24(
+        inPcm: IntArray, inPcmOffset: Int, frameSize: Int,
+        outData: ByteArray, outDataOffset: Int, maxDataBytes: Int
+    ): Int {
+        return inPcm.usePinned { pinnedPcm ->
+            outData.usePinned { pinnedOut ->
+                val pcmPtr = pinnedPcm.addressOf(inPcmOffset)
+                val outPtr = pinnedOut.addressOf(outDataOffset)
+                opus_encode24(
+                    ptr,
+                    pcmPtr,
+                    frameSize,
+                    outPtr.reinterpret(),
+                    maxDataBytes
+                )
             }
         }
     }
 
     actual fun ctl(request: Int, value: Int): Int {
-        return memScoped {
-            opus_encoder_ctl(ptr, request, value)
-        }
+        return opus_encoder_ctl(ptr, request, value)
     }
 
     actual fun ctlQuery(request: Int): Int {
         return memScoped {
             val valuePtr = alloc<IntVar>()
             val result = opus_encoder_ctl(ptr, request, valuePtr.ptr)
-            if (result < 0) error("Error querying parameter: $result")
-            valuePtr.value
+            if (result >= 0) valuePtr.value else result
         }
     }
 

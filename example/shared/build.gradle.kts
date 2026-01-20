@@ -50,7 +50,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
-            implementation(libs.kopus)
+            implementation(libs.kopus.full)
             implementation(libs.compose.charts)
         }
         commonTest.dependencies {

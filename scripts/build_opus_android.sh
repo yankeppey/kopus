@@ -3,12 +3,31 @@ set -euo pipefail
 
 : "${ANDROID_NDK_HOME:?Please export ANDROID_NDK_HOME to point at your NDK}"
 
+# Parse arguments
+VARIANT="base"
+if [[ "${1:-}" == "--full" ]]; then
+  VARIANT="full"
+fi
+
 OPUS_DIR="$(cd "$(dirname "$0")/../third_party/opus" && pwd)"
-OUT_ROOT="$(pwd)/build/opus/android"
+if [[ "$VARIANT" == "full" ]]; then
+  OUT_ROOT="$(pwd)/build/opus-full/android"
+else
+  OUT_ROOT="$(pwd)/build/opus/android"
+fi
 API=24
 
 ABIS=("arm64-v8a" "armeabi-v7a" "x86_64")
 HOSTS=("aarch64-linux-android" "armv7a-linux-androideabi" "x86_64-linux-android")
+
+# Configure flags for full variant (DRED, OSCE, QEXT)
+EXTRA_CONFIGURE_FLAGS=""
+if [[ "$VARIANT" == "full" ]]; then
+  EXTRA_CONFIGURE_FLAGS="--enable-dred --enable-osce --enable-qext"
+  echo "🔧 Building FULL variant with DNN features (DRED, OSCE, QEXT)"
+else
+  echo "🔧 Building BASE variant (vanilla Opus)"
+fi
 
 for i in "${!ABIS[@]}"; do
   ABI="${ABIS[$i]}"
@@ -30,13 +49,15 @@ for i in "${!ABIS[@]}"; do
   pushd "$OPUS_DIR" >/dev/null
     make distclean >/dev/null 2>&1 || true
     ./autogen.sh
+    # shellcheck disable=SC2086
     ./configure \
         --disable-shared \
         --enable-static \
         --host="$HOST" \
         CC="$CC_PATH" \
         CFLAGS="-Oz" \
-        --prefix="$OUT_DIR"
+        --prefix="$OUT_DIR" \
+        $EXTRA_CONFIGURE_FLAGS
     make -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
     make install
   popd >/dev/null

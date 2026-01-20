@@ -2,7 +2,7 @@
 
 Kopus is a lightweight Kotlin Multiplatform wrapper for the [Opus audio codec](https://opus-codec.org/). It provides Kotlin bindings for Opus encoding and decoding functionality across Android, JVM, and iOS platforms.
 
-![Kopus encoding/decoding demonstration](Screenshot_20250615_160803.png)
+![Kopus encoding/decoding demonstration](screenshots/encoding.png)
 
 ## Features
 
@@ -10,6 +10,9 @@ Kopus is a lightweight Kotlin Multiplatform wrapper for the [Opus audio codec](h
 - **Kotlin Multiplatform** support for Android, JVM, and iOS
 - **Complete API access** to all Opus encoder and decoder settings
 - **Optimized native libraries** for various architectures
+- **Multi-channel audio** with multistream encoder/decoder for surround sound (5.1, 7.1)
+- **Spatial audio** with projection encoder/decoder for ambisonics
+- **Packet loss handling** with PLC and DRED support (kopus-full)
 
 ## Supported Platforms
 
@@ -19,15 +22,17 @@ Kopus is a lightweight Kotlin Multiplatform wrapper for the [Opus audio codec](h
 - **Linux**: x86_64, arm64
 - **Windows**: x86_64
 
-Note: The library has been primarily tested on macOS arm64 and Linux x86_64. While other platforms should work, they haven't been extensively tested.
-
 ## Installation
 
 ### Gradle
 
 ```kotlin
 dependencies {
-    implementation("eu.buney.kopus:kopus:1.6.1")
+    // Standard version
+    implementation("eu.buney.kopus:kopus:1.6.1.1")
+
+    // Full version with DRED/OSCE/QEXT (larger binary size)
+    implementation("eu.buney.kopus:kopus-full:1.6.1.1")
 }
 ```
 
@@ -75,6 +80,59 @@ val pcmOutput = decoder.decode(encodedData, frameSize)
 // Clean up when done
 decoder.close()
 ```
+
+## Packet Loss Concealment (PLC)
+
+Handle missing packets gracefully. When a packet is lost, pass `null` to the decoder to generate concealment audio. With `kopus-full`, DRED provides neural network-based recovery for even better quality.
+
+```kotlin
+val decoder = OpusDecoder(sampleRate = 48000, channels = 1)
+
+// Normal decode
+val audio = decoder.decode(packet, frameSize = 960)
+
+// Packet lost - generate concealment
+val concealed = decoder.decode(null, frameSize = 960)
+```
+
+![PLC Demo](screenshots/plc.png)
+
+## Surround Sound (5.1, 7.1)
+
+Encode and decode multi-channel audio using the multistream API. Supports standard channel layouts like 5.1 and 7.1 surround.
+
+```kotlin
+// 5.1 surround: 6 channels
+val encoder = OpusMultistreamEncoder(
+    sampleRate = 48000,
+    channels = 6,
+    streams = 4,
+    coupledStreams = 2,
+    mapping = byteArrayOf(0, 4, 1, 2, 3, 5)
+)
+val encoded = encoder.encode(surroundPcm)
+encoder.close()
+```
+
+![5.1 Surround](screenshots/surround.png)
+
+## Ambisonics (Spatial Audio)
+
+Encode spatial audio using ambisonics with the projection API. The encoder automatically handles the channel mapping for first-order ambisonics (4 channels).
+
+```kotlin
+// First-order ambisonics: 4 channels (W, Y, Z, X)
+val encoder = OpusProjectionEncoder(
+    sampleRate = 48000,
+    channels = 4,
+    streams = 2,
+    coupledStreams = 2
+)
+val encoded = encoder.encode(ambisonicsPcm)
+encoder.close()
+```
+
+![Ambisonics](screenshots/ambisonics.png)
 
 ## Advanced Usage
 
@@ -162,6 +220,14 @@ Desktop builds are more complex as they require libraries for multiple operating
   ```
 
 This produces native libraries that are packaged into the JVM artifacts, ensuring cross-platform compatibility.
+
+### Building kopus-full
+
+To build the full variant with DRED/OSCE/QEXT support:
+```bash
+./scripts/build_opus_apple.sh --full
+./gradlew build -Pkopus.full=true
+```
 
 ## License
 

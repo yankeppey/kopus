@@ -119,42 +119,42 @@ fun OpusEncoder.getComplexity(): Int = ctlQuery(OPUS_GET_COMPLEXITY_REQUEST)
 
 /**
  * Enables or disables variable bitrate (VBR) in the encoder.
- * @param vbr 0 = Hard CBR, 1 = VBR (default)
+ * @param enabled true = VBR (default), false = Hard CBR
  * @return OPUS_OK on success
  */
-fun OpusEncoder.setVBR(vbr: Int): Int = ctl(OPUS_SET_VBR_REQUEST, vbr)
+fun OpusEncoder.setVBR(enabled: Boolean): Int = ctl(OPUS_SET_VBR_REQUEST, if (enabled) 1 else 0)
 
 /**
  * Determine if variable bitrate (VBR) is enabled in the encoder.
- * @return 0 = Hard CBR, 1 = VBR (default)
+ * @return true = VBR (default), false = Hard CBR
  */
-fun OpusEncoder.getVBR(): Int = ctlQuery(OPUS_GET_VBR_REQUEST)
+fun OpusEncoder.getVBR(): Boolean = ctlQuery(OPUS_GET_VBR_REQUEST) == 1
 
 /**
  * Enables or disables constrained VBR in the encoder.
- * @param cvbr 0 = Unconstrained VBR, 1 = Constrained VBR (default)
+ * @param enabled true = Constrained VBR (default), false = Unconstrained VBR
  * @return OPUS_OK on success
  */
-fun OpusEncoder.setVBRConstraint(cvbr: Int): Int = ctl(OPUS_SET_VBR_CONSTRAINT_REQUEST, cvbr)
+fun OpusEncoder.setVBRConstraint(enabled: Boolean): Int = ctl(OPUS_SET_VBR_CONSTRAINT_REQUEST, if (enabled) 1 else 0)
 
 /**
  * Determine if constrained VBR is enabled in the encoder.
- * @return 0 = Unconstrained VBR, 1 = Constrained VBR (default)
+ * @return true = Constrained VBR (default), false = Unconstrained VBR
  */
-fun OpusEncoder.getVBRConstraint(): Int = ctlQuery(OPUS_GET_VBR_CONSTRAINT_REQUEST)
+fun OpusEncoder.getVBRConstraint(): Boolean = ctlQuery(OPUS_GET_VBR_CONSTRAINT_REQUEST) == 1
 
 /**
  * Configures the encoder's use of inband forward error correction (FEC).
- * @param fec 0 = Disable FEC (default), 1 = Enable FEC
+ * @param enabled true = Enable FEC, false = Disable FEC (default)
  * @return OPUS_OK on success
  */
-fun OpusEncoder.setInbandFEC(fec: Int): Int = ctl(OPUS_SET_INBAND_FEC_REQUEST, fec)
+fun OpusEncoder.setInbandFEC(enabled: Boolean): Int = ctl(OPUS_SET_INBAND_FEC_REQUEST, if (enabled) 1 else 0)
 
 /**
  * Gets encoder's configured use of inband forward error correction.
- * @return 0 = FEC disabled, 1 = FEC enabled
+ * @return true = FEC enabled, false = FEC disabled
  */
-fun OpusEncoder.getInbandFEC(): Int = ctlQuery(OPUS_GET_INBAND_FEC_REQUEST)
+fun OpusEncoder.getInbandFEC(): Boolean = ctlQuery(OPUS_GET_INBAND_FEC_REQUEST) == 1
 
 /**
  * Configures the encoder's expected packet loss percentage.
@@ -184,22 +184,22 @@ fun OpusEncoder.getForceChannels(): Int = ctlQuery(OPUS_GET_FORCE_CHANNELS_REQUE
 
 /**
  * Configures the encoder's use of discontinuous transmission (DTX).
- * @param dtx 0 = Disable DTX (default), 1 = Enable DTX
+ * @param enabled true = Enable DTX, false = Disable DTX (default)
  * @return OPUS_OK on success
  */
-fun OpusEncoder.setDTX(dtx: Int): Int = ctl(OPUS_SET_DTX_REQUEST, dtx)
+fun OpusEncoder.setDTX(enabled: Boolean): Int = ctl(OPUS_SET_DTX_REQUEST, if (enabled) 1 else 0)
 
 /**
  * Gets the encoder's configured use of discontinuous transmission.
- * @return 0 = DTX disabled, 1 = DTX enabled
+ * @return true = DTX enabled, false = DTX disabled
  */
-fun OpusEncoder.getDTX(): Int = ctlQuery(OPUS_GET_DTX_REQUEST)
+fun OpusEncoder.getDTX(): Boolean = ctlQuery(OPUS_GET_DTX_REQUEST) == 1
 
 /**
  * Gets the DTX state of the encoder.
- * @return 0 = The encoder is not in DTX, 1 = The encoder is in DTX
+ * @return true = The encoder is in DTX, false = The encoder is not in DTX
  */
-fun OpusEncoder.getInDTX(): Int = ctlQuery(OPUS_GET_IN_DTX_REQUEST)
+fun OpusEncoder.getInDTX(): Boolean = ctlQuery(OPUS_GET_IN_DTX_REQUEST) == 1
 
 /**
  * Configures the depth of signal being encoded.
@@ -239,29 +239,29 @@ fun OpusEncoder.getExpertFrameDuration(): Int = ctlQuery(OPUS_GET_EXPERT_FRAME_D
 
 /**
  * Configures use of prediction in the encoder.
- * @param disabled 0 = Enable prediction (default), 1 = Disable prediction
+ * @param disabled true = Disable prediction, false = Enable prediction (default)
  * @return OPUS_OK on success
  */
-fun OpusEncoder.setPredictionDisabled(disabled: Int): Int = ctl(OPUS_SET_PREDICTION_DISABLED_REQUEST, disabled)
+fun OpusEncoder.setPredictionDisabled(disabled: Boolean): Int = ctl(OPUS_SET_PREDICTION_DISABLED_REQUEST, if (disabled) 1 else 0)
 
 /**
  * Gets the encoder's configured prediction status.
- * @return 0 = Prediction enabled (default), 1 = Prediction disabled
+ * @return true = Prediction disabled, false = Prediction enabled (default)
  */
-fun OpusEncoder.getPredictionDisabled(): Int = ctlQuery(OPUS_GET_PREDICTION_DISABLED_REQUEST)
+fun OpusEncoder.getPredictionDisabled(): Boolean = ctlQuery(OPUS_GET_PREDICTION_DISABLED_REQUEST) == 1
 
 /**
  * Configures use of phase inversion for intensity stereo.
- * @param disabled 0 = Enable phase inversion (default), 1 = Disable phase inversion
+ * @param disabled true = Disable phase inversion, false = Enable phase inversion (default)
  * @return OPUS_OK on success
  */
-fun OpusEncoder.setPhaseInversionDisabled(disabled: Int): Int = ctl(OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST, disabled)
+fun OpusEncoder.setPhaseInversionDisabled(disabled: Boolean): Int = ctl(OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST, if (disabled) 1 else 0)
 
 /**
  * Gets the encoder's configured phase inversion status.
- * @return 0 = Phase inversion enabled (default), 1 = Phase inversion disabled
+ * @return true = Phase inversion disabled, false = Phase inversion enabled (default)
  */
-fun OpusEncoder.getPhaseInversionDisabled(): Int = ctlQuery(OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST)
+fun OpusEncoder.getPhaseInversionDisabled(): Boolean = ctlQuery(OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST) == 1
 
 /**
  * Gets the total samples of delay added by the entire codec.
@@ -274,6 +274,12 @@ fun OpusEncoder.getLookahead(): Int = ctlQuery(OPUS_GET_LOOKAHEAD_REQUEST)
  * @return Entropy coder state
  */
 fun OpusEncoder.getFinalRange(): Int = ctlQuery(OPUS_GET_FINAL_RANGE_REQUEST)
+
+/**
+ * Resets the codec state to be equivalent to a freshly initialized state.
+ * @return OPUS_OK on success
+ */
+fun OpusEncoder.resetState(): Int = ctl(OPUS_RESET_STATE, 0)
 
 /**
  * Gets the sampling rate the encoder was initialized with.
@@ -299,6 +305,35 @@ fun OpusEncoder.setDREDDuration(dredDuration: Int): Int = ctl(OPUS_SET_DRED_DURA
  * @return The maximum number of 10-ms redundant frames
  */
 fun OpusEncoder.getDREDDuration(): Int = ctlQuery(OPUS_GET_DRED_DURATION_REQUEST)
+
+/**
+ * Enables or disables QEXT (Quality Extension) in the encoder.
+ *
+ * QEXT is an experimental feature that enables:
+ * - 96kHz sampling rate support
+ * - Up to 2Mb/s bitrate
+ * - 20-bit depth
+ *
+ * **Warning:** QEXT will *hurt* audio quality unless operating at very high bitrates
+ * (typically above 128 kb/s for stereo music).
+ *
+ * **Note:** This function is only effective in the `kopus-full` artifact.
+ * On the base `kopus` artifact, this will return [OPUS_UNIMPLEMENTED].
+ *
+ * @param enabled true = Enable QEXT, false = Disable QEXT (default)
+ * @return [OPUS_OK] on success, [OPUS_UNIMPLEMENTED] if QEXT is not available
+ */
+fun OpusEncoder.setQext(enabled: Boolean): Int = ctl(OPUS_SET_QEXT_REQUEST, if (enabled) 1 else 0)
+
+/**
+ * Gets whether QEXT (Quality Extension) is enabled in the encoder.
+ *
+ * **Note:** This function is only effective in the `kopus-full` artifact.
+ * On the base `kopus` artifact, this will return false.
+ *
+ * @return true = QEXT enabled, false = QEXT disabled
+ */
+fun OpusEncoder.getQext(): Boolean = ctlQuery(OPUS_GET_QEXT_REQUEST) == 1
 
 /**
  * A utility extension function that creates a new [ByteArray] each time it is called.

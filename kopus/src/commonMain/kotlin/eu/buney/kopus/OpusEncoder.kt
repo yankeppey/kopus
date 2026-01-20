@@ -74,6 +74,25 @@ expect class OpusEncoder(
     ): Int
 
     /**
+     * Encodes an Opus frame from 24-bit integer input, putting the output into a specified data buffer.
+     *
+     * Mirrors the C function `opus_encode24`.
+     *
+     * @param inPcm 24-bit input signal stored in 32-bit integers (interleaved if stereo). Length should be at least frameSize * channels.
+     *              Values should be in the range of 24-bit signed integers (-8388608 to 8388607).
+     * @param inPcmOffset Offset to use when reading the [inPcm] buffer
+     * @param frameSize The number of samples _per channel_ in the input signal. The frame size must be a valid Opus framesize for the given sample rate.
+     * @param outData Destination buffer for the output payload. This must contain at least [maxDataBytes]
+     * @param outDataOffset The offset to use when writing to the output data buffer
+     * @param maxDataBytes The maximum amount of space allocated for the output payload
+     * @return The length of the encoded packet (in bytes) on success or a negative error code on failure
+     */
+    fun encode24(
+        inPcm: IntArray, inPcmOffset: Int, frameSize: Int,
+        outData: ByteArray, outDataOffset: Int, maxDataBytes: Int = DEFAULT_MAX_BYTES
+    ): Int
+
+    /**
      * Releases resources associated with this encoder.
      *
      * Mirrors the C function `opus_encoder_destroy`.

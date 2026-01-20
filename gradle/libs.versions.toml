@@ -1,7 +1,7 @@
 [versions]
 agp = "9.0.0"
 composeCharts = "0.2.0"
-kopus = "1.6.1"
+kopus = "1.6.1.1"
 kotlin = "2.3.0"
 android-compileSdk = "36"
 android-minSdk = "26"
@@ -23,6 +23,7 @@ vanniktechMavenPublish = "0.35.0"
 [libraries]
 compose-charts = { module = "io.github.ehsannarmani:compose-charts", version.ref = "composeCharts" }
 kopus = { module = "eu.buney.kopus:kopus", version.ref = "kopus" }
+kopus-full = { module = "eu.buney.kopus:kopus-full", version.ref = "kopus" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

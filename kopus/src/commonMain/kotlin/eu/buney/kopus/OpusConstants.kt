@@ -6,6 +6,16 @@
  */
 package eu.buney.kopus
 
+// Error codes
+const val OPUS_OK = 0
+const val OPUS_BAD_ARG = -1
+const val OPUS_BUFFER_TOO_SMALL = -2
+const val OPUS_INTERNAL_ERROR = -3
+const val OPUS_INVALID_PACKET = -4
+const val OPUS_UNIMPLEMENTED = -5
+const val OPUS_INVALID_STATE = -6
+const val OPUS_ALLOC_FAIL = -7
+
 // Encoder CTL request constants
 const val OPUS_SET_APPLICATION_REQUEST = 4000
 const val OPUS_GET_APPLICATION_REQUEST = 4001
@@ -51,6 +61,12 @@ const val OPUS_GET_IN_DTX_REQUEST = 4049
 const val OPUS_SET_DRED_DURATION_REQUEST = 4050
 const val OPUS_GET_DRED_DURATION_REQUEST = 4051
 const val OPUS_SET_DNN_BLOB_REQUEST = 4052
+const val OPUS_SET_OSCE_BWE_REQUEST = 4054
+const val OPUS_GET_OSCE_BWE_REQUEST = 4055
+const val OPUS_SET_QEXT_REQUEST = 4056
+const val OPUS_GET_QEXT_REQUEST = 4057
+const val OPUS_SET_IGNORE_EXTENSIONS_REQUEST = 4058
+const val OPUS_GET_IGNORE_EXTENSIONS_REQUEST = 4059
 
 // Opus specific values
 const val OPUS_AUTO = -1000
@@ -60,6 +76,8 @@ const val OPUS_BITRATE_MAX = -1
 const val OPUS_APPLICATION_VOIP = 2048
 const val OPUS_APPLICATION_AUDIO = 2049
 const val OPUS_APPLICATION_RESTRICTED_LOWDELAY = 2051
+const val OPUS_APPLICATION_RESTRICTED_SILK = 2052
+const val OPUS_APPLICATION_RESTRICTED_CELT = 2053
 
 // Signal types
 const val OPUS_SIGNAL_VOICE = 3001
@@ -89,3 +107,12 @@ const val OPUS_FRAMESIZE_120_MS = 5009
 // Using 1276 * 3 = 3828 bytes to safely handle larger packet sizes including
 // multi-frame packets and padding (rounded to 4000 for simplicity)
 const val DEFAULT_MAX_BYTES = 4000
+
+// Multistream CTL request constants
+const val OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST = 5120
+const val OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST = 5122
+
+// Projection (Ambisonics) CTL request constants
+const val OPUS_PROJECTION_GET_DEMIXING_MATRIX_GAIN_REQUEST = 6001
+const val OPUS_PROJECTION_GET_DEMIXING_MATRIX_SIZE_REQUEST = 6003
+const val OPUS_PROJECTION_GET_DEMIXING_MATRIX_REQUEST = 6005

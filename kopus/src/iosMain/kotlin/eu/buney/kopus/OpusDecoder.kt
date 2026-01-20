@@ -9,10 +9,6 @@ package eu.buney.kopus
 import kotlinx.cinterop.*
 import opus.c.*
 
-private fun chk(err: Int) {
-    require(err >= 0) { "Opus error $err" }
-}
-
 @OptIn(ExperimentalForeignApi::class)
 actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels: Int) : AutoCloseable {
     private val ptr: CPointer<cnames.structs.OpusDecoder>
@@ -20,8 +16,8 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
     init {
         memScoped {
             val e = alloc<IntVar>()
-            ptr = opus_decoder_create(sampleRate, channels, e.ptr) ?: error("null")
-            chk(e.value)
+            ptr = opus_decoder_create(sampleRate, channels, e.ptr) ?: error("opus_decoder_create returned null")
+            require(e.value >= 0) { "Opus decoder create error ${e.value}" }
         }
     }
 
@@ -30,61 +26,178 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
     }
 
     actual fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: ShortArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
     ): Int =
-        inData.usePinned { pinnedIn ->
-            outPcm.usePinned { pinnedOut ->
-                val inPtr = pinnedIn.addressOf(inDataOffset)
-                val outPtr = pinnedOut.addressOf(outPcmOffset)
-                val decoded = opus_decode(
-                    ptr,
-                    inPtr.reinterpret(),
-                    len,
-                    outPtr,
-                    frameSize,
-                    if (decodeFec) 1 else 0
-                )
-                chk(decoded)
-                decoded
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_decode(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_decode(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
+
+            decoded
         }
 
     actual fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: FloatArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
     ): Int =
-        inData.usePinned { pinnedIn ->
-            outPcm.usePinned { pinnedOut ->
-                val inPtr = pinnedIn.addressOf(inDataOffset)
-                val outPtr = pinnedOut.addressOf(outPcmOffset)
-                val decoded = opus_decode_float(
-                    ptr,
-                    inPtr.reinterpret(),
-                    len,
-                    outPtr,
-                    frameSize,
-                    if (decodeFec) 1 else 0
-                )
-                chk(decoded)
-                decoded
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_decode_float(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_decode_float(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
+
+            decoded
         }
 
+    actual fun decode24(
+        inData: ByteArray?,
+        inDataOffset: Int,
+        len: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int,
+        decodeFec: Boolean
+    ): Int =
+        outPcm.usePinned { pinnedOut ->
+            val outPtr = pinnedOut.addressOf(outPcmOffset)
+
+            val decoded = if (inData != null) {
+                inData.usePinned { pinnedIn ->
+                    opus_decode24(
+                        ptr,
+                        pinnedIn.addressOf(inDataOffset).reinterpret(),
+                        len,
+                        outPtr,
+                        frameSize,
+                        if (decodeFec) 1 else 0
+                    )
+                }
+            } else {
+                opus_decode24(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
+            }
+
+            decoded
+        }
 
     actual fun ctl(request: Int, value: Int): Int {
-        return memScoped {
-            opus_decoder_ctl(ptr, request, value)
-        }
+        return opus_decoder_ctl(ptr, request, value)
     }
 
     actual fun ctlQuery(request: Int): Int {
         return memScoped {
             val valuePtr = alloc<IntVar>()
             val result = opus_decoder_ctl(ptr, request, valuePtr.ptr)
-            if (result < 0) error("Error querying parameter: $result")
-            valuePtr.value
+            if (result >= 0) valuePtr.value else result
         }
     }
 
+    actual fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return outPcm.usePinned { pinnedOut ->
+            opus_decoder_dred_decode(
+                ptr,
+                dred.ptr,
+                dredOffset,
+                pinnedOut.addressOf(outPcmOffset),
+                frameSize
+            )
+        }
+    }
+
+    actual fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return outPcm.usePinned { pinnedOut ->
+            opus_decoder_dred_decode_float(
+                ptr,
+                dred.ptr,
+                dredOffset,
+                pinnedOut.addressOf(outPcmOffset),
+                frameSize
+            )
+        }
+    }
+
+    actual fun decodeDred24(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return outPcm.usePinned { pinnedOut ->
+            opus_decoder_dred_decode24(
+                ptr,
+                dred.ptr,
+                dredOffset,
+                pinnedOut.addressOf(outPcmOffset),
+                frameSize
+            )
+        }
+    }
+
+    actual fun getNbSamples(packet: ByteArray, len: Int): Int =
+        packet.usePinned { pinned ->
+            opus_decoder_get_nb_samples(ptr, pinned.addressOf(0).reinterpret(), len)
+        }
 }

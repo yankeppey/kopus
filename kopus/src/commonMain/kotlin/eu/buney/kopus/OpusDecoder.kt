@@ -47,8 +47,13 @@ expect class OpusDecoder(
      * @return The number of decoded samples (per channel) on success or a negative error code on failure
      */
     fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: ShortArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray? = null,
+        inDataOffset: Int = 0,
+        len: Int = 0,
+        outPcm: ShortArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int,
+        decodeFec: Boolean = false
     ): Int
 
     /**
@@ -66,8 +71,38 @@ expect class OpusDecoder(
      * @return The number of decoded samples (per channel) on success or a negative error code on failure
      */
     fun decode(
-        inData: ByteArray, inDataOffset: Int,
-        len: Int, outPcm: FloatArray, outPcmOffset: Int, frameSize: Int, decodeFec: Boolean
+        inData: ByteArray? = null,
+        inDataOffset: Int = 0,
+        len: Int = 0,
+        outPcm: FloatArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int,
+        decodeFec: Boolean = false
+    ): Int
+
+    /**
+     * Decodes an Opus packet into PCM audio using 24-bit integer format.
+     *
+     * Mirrors the C function `opus_decode24`.
+     *
+     * @param inData The input payload. Use null to indicate packet loss (PLC)
+     * @param inDataOffset The offset to use when reading the input payload. Usually 0
+     * @param len The number of bytes in the payload (the packet size)
+     * @param outPcm A buffer to put the output PCM as 24-bit values stored in 32-bit integers.
+     *               The output size is (# of samples) * (# of channels).
+     * @param outPcmOffset The offset to use when writing to the output buffer
+     * @param frameSize The number of samples (per channel) of available space in the output PCM buffer
+     * @param decodeFec Indicates that we want to recreate the PREVIOUS (lost) packet using FEC data from THIS packet
+     * @return The number of decoded samples (per channel) on success or a negative error code on failure
+     */
+    fun decode24(
+        inData: ByteArray? = null,
+        inDataOffset: Int = 0,
+        len: Int = 0,
+        outPcm: IntArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int,
+        decodeFec: Boolean = false
     ): Int
 
     /**
@@ -97,4 +132,79 @@ expect class OpusDecoder(
      * @return The requested parameter value on success or an error code on failure
      */
     fun ctlQuery(request: Int): Int
+
+    /**
+     * Decodes audio from DRED (Deep Redundancy) data with 16-bit output.
+     *
+     * Mirrors the C function `opus_decoder_dred_decode`.
+     *
+     * This method is used to recover audio when packets are lost, using the
+     * DRED redundancy data that was parsed by [OpusDREDDecoder.parse].
+     *
+     * **Note:** This method is only functional in the `kopus-full` artifact.
+     * On the base `kopus` artifact, this will throw [UnsupportedOperationException].
+     *
+     * @param dred The [OpusDRED] object containing parsed redundancy data
+     * @param dredOffset Position of the redundancy to decode (in samples before the beginning
+     *                   of the real audio data in the packet)
+     * @param outPcm Output buffer for decoded PCM samples (interleaved if stereo)
+     * @param outPcmOffset Offset into the output buffer to start writing
+     * @param frameSize Number of samples per channel to decode. Must be a multiple of 2.5 ms.
+     * @return Number of decoded samples on success or a negative error code on failure
+     * @throws UnsupportedOperationException if DRED is not available in this build
+     */
+    fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int
+    ): Int
+
+    /**
+     * Decodes audio from DRED (Deep Redundancy) data with floating point output.
+     *
+     * Mirrors the C function `opus_decoder_dred_decode_float`.
+     *
+     * @see decodeDred for details
+     * @throws UnsupportedOperationException if DRED is not available in this build
+     */
+    fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int
+    ): Int
+
+    /**
+     * Decodes audio from DRED (Deep Redundancy) data with 24-bit output.
+     *
+     * Mirrors the C function `opus_decoder_dred_decode24`.
+     *
+     * @see decodeDred for details
+     * @throws UnsupportedOperationException if DRED is not available in this build
+     */
+    fun decodeDred24(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int
+    ): Int
+
+    /**
+     * Gets the number of samples of an Opus packet using this decoder's sample rate.
+     *
+     * Mirrors the C function `opus_decoder_get_nb_samples`.
+     *
+     * This is similar to [OpusPacket.getNbSamples] but uses the decoder's configured
+     * sample rate instead of requiring one as a parameter.
+     *
+     * @param packet Opus packet data
+     * @param len Length of the packet in bytes
+     * @return Number of samples, or [OPUS_BAD_ARG] if insufficient data,
+     *         or [OPUS_INVALID_PACKET] if corrupted
+     */
+    fun getNbSamples(packet: ByteArray, len: Int = packet.size): Int
 }

@@ -35,6 +35,14 @@ actual class OpusEncoder actual constructor(
             handle, inPcm, inPcmOffset, frameSize, outData, outDataOffset, maxDataBytes
         )
     }
+    actual fun encode24(
+        inPcm: IntArray, inPcmOffset: Int, frameSize: Int,
+        outData: ByteArray, outDataOffset: Int, maxDataBytes: Int
+    ): Int {
+        return nativeEncode24Offset(
+            handle, inPcm, inPcmOffset, frameSize, outData, outDataOffset, maxDataBytes
+        )
+    }
     actual override fun close() {
         if (handle != 0L) {
             nativeDestroy(handle)
@@ -72,8 +80,18 @@ actual class OpusEncoder actual constructor(
         maxBytes: Int
     ): Int
 
+    private external fun nativeEncode24Offset(
+        h: Long,
+        pcm: IntArray,
+        pcmOffset: Int,
+        frame: Int,
+        out: ByteArray,
+        outOffset: Int,
+        maxBytes: Int
+    ): Int
+
     private external fun nativeDestroy(h: Long)
 
-    external fun nativeCtl(h: Long, request: Int, value: Int): Int
-    external fun nativeCtlQuery(h: Long, request: Int): Int
+    private external fun nativeCtl(h: Long, request: Int, value: Int): Int
+    private external fun nativeCtlQuery(h: Long, request: Int): Int
 }
