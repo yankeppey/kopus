@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <opus.h>
+#include <opus_defines.h>
 #include <stdlib.h>
 
 #define PKG eu_buney_kopus

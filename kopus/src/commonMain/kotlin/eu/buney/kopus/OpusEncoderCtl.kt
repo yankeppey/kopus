@@ -307,6 +307,35 @@ fun OpusEncoder.setDREDDuration(dredDuration: Int): Int = ctl(OPUS_SET_DRED_DURA
 fun OpusEncoder.getDREDDuration(): Int = ctlQuery(OPUS_GET_DRED_DURATION_REQUEST)
 
 /**
+ * Enables or disables QEXT (Quality Extension) in the encoder.
+ *
+ * QEXT is an experimental feature that enables:
+ * - 96kHz sampling rate support
+ * - Up to 2Mb/s bitrate
+ * - 20-bit depth
+ *
+ * **Warning:** QEXT will *hurt* audio quality unless operating at very high bitrates
+ * (typically above 128 kb/s for stereo music).
+ *
+ * **Note:** This function is only effective in the `kopus-full` artifact.
+ * On the base `kopus` artifact, this will return [OPUS_UNIMPLEMENTED].
+ *
+ * @param enabled true = Enable QEXT, false = Disable QEXT (default)
+ * @return [OPUS_OK] on success, [OPUS_UNIMPLEMENTED] if QEXT is not available
+ */
+fun OpusEncoder.setQext(enabled: Boolean): Int = ctl(OPUS_SET_QEXT_REQUEST, if (enabled) 1 else 0)
+
+/**
+ * Gets whether QEXT (Quality Extension) is enabled in the encoder.
+ *
+ * **Note:** This function is only effective in the `kopus-full` artifact.
+ * On the base `kopus` artifact, this will return false.
+ *
+ * @return true = QEXT enabled, false = QEXT disabled
+ */
+fun OpusEncoder.getQext(): Boolean = ctlQuery(OPUS_GET_QEXT_REQUEST) == 1
+
+/**
  * A utility extension function that creates a new [ByteArray] each time it is called.
  */
 fun OpusEncoder.encode(

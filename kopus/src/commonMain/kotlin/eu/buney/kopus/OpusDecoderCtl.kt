@@ -116,6 +116,30 @@ fun OpusDecoder.setIgnoreExtensions(ignore: Boolean): Int = ctl(OPUS_SET_IGNORE_
 fun OpusDecoder.getIgnoreExtensions(): Boolean = ctlQuery(OPUS_GET_IGNORE_EXTENSIONS_REQUEST) == 1
 
 /**
+ * Enables or disables OSCE (Opus Speech Coding Enhancement) bandwidth extension.
+ *
+ * OSCE is an experimental feature that uses neural network-based bandwidth extension
+ * to improve audio quality by extending bandwidth from 8kHz to 20kHz.
+ *
+ * **Note:** This function is only effective in the `kopus-full` artifact.
+ * On the base `kopus` artifact, this will return [OPUS_UNIMPLEMENTED].
+ *
+ * @param enabled true = Enable OSCE BWE, false = Disable OSCE BWE (default)
+ * @return [OPUS_OK] on success, [OPUS_UNIMPLEMENTED] if OSCE is not available
+ */
+fun OpusDecoder.setOsceBwe(enabled: Boolean): Int = ctl(OPUS_SET_OSCE_BWE_REQUEST, if (enabled) 1 else 0)
+
+/**
+ * Gets whether OSCE bandwidth extension is enabled.
+ *
+ * **Note:** This function is only effective in the `kopus-full` artifact.
+ * On the base `kopus` artifact, this will return false.
+ *
+ * @return true = OSCE BWE enabled, false = OSCE BWE disabled
+ */
+fun OpusDecoder.getOsceBwe(): Boolean = ctlQuery(OPUS_GET_OSCE_BWE_REQUEST) == 1
+
+/**
  * Decodes a complete Opus packet into PCM.
  *
  * This is a simplified version that creates an output buffer of an appropriate size based on the frame size.

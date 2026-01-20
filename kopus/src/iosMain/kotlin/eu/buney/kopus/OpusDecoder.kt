@@ -127,4 +127,72 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         }
     }
 
+    actual fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return outPcm.usePinned { pinnedOut ->
+            opus_decoder_dred_decode(
+                ptr,
+                dred.ptr,
+                dredOffset,
+                pinnedOut.addressOf(outPcmOffset),
+                frameSize
+            )
+        }
+    }
+
+    actual fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return outPcm.usePinned { pinnedOut ->
+            opus_decoder_dred_decode_float(
+                ptr,
+                dred.ptr,
+                dredOffset,
+                pinnedOut.addressOf(outPcmOffset),
+                frameSize
+            )
+        }
+    }
+
+    actual fun decodeDred24(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return outPcm.usePinned { pinnedOut ->
+            opus_decoder_dred_decode24(
+                ptr,
+                dred.ptr,
+                dredOffset,
+                pinnedOut.addressOf(outPcmOffset),
+                frameSize
+            )
+        }
+    }
 }

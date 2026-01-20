@@ -132,4 +132,64 @@ expect class OpusDecoder(
      * @return The requested parameter value on success or an error code on failure
      */
     fun ctlQuery(request: Int): Int
+
+    /**
+     * Decodes audio from DRED (Deep Redundancy) data with 16-bit output.
+     *
+     * Mirrors the C function `opus_decoder_dred_decode`.
+     *
+     * This method is used to recover audio when packets are lost, using the
+     * DRED redundancy data that was parsed by [OpusDREDDecoder.parse].
+     *
+     * **Note:** This method is only functional in the `kopus-full` artifact.
+     * On the base `kopus` artifact, this will throw [UnsupportedOperationException].
+     *
+     * @param dred The [OpusDRED] object containing parsed redundancy data
+     * @param dredOffset Position of the redundancy to decode (in samples before the beginning
+     *                   of the real audio data in the packet)
+     * @param outPcm Output buffer for decoded PCM samples (interleaved if stereo)
+     * @param outPcmOffset Offset into the output buffer to start writing
+     * @param frameSize Number of samples per channel to decode. Must be a multiple of 2.5 ms.
+     * @return Number of decoded samples on success or a negative error code on failure
+     * @throws UnsupportedOperationException if DRED is not available in this build
+     */
+    fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int
+    ): Int
+
+    /**
+     * Decodes audio from DRED (Deep Redundancy) data with floating point output.
+     *
+     * Mirrors the C function `opus_decoder_dred_decode_float`.
+     *
+     * @see decodeDred for details
+     * @throws UnsupportedOperationException if DRED is not available in this build
+     */
+    fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int
+    ): Int
+
+    /**
+     * Decodes audio from DRED (Deep Redundancy) data with 24-bit output.
+     *
+     * Mirrors the C function `opus_decoder_dred_decode24`.
+     *
+     * @see decodeDred for details
+     * @throws UnsupportedOperationException if DRED is not available in this build
+     */
+    fun decodeDred24(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int = 0,
+        frameSize: Int
+    ): Int
 }

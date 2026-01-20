@@ -68,6 +68,51 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
         return nativeCtlQuery(handle, request)
     }
 
+    actual fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return nativeDecodeDredShort(handle, dred.handle, dredOffset, outPcm, outPcmOffset, frameSize)
+    }
+
+    actual fun decodeDred(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return nativeDecodeDredFloat(handle, dred.handle, dredOffset, outPcm, outPcmOffset, frameSize)
+    }
+
+    actual fun decodeDred24(
+        dred: OpusDRED,
+        dredOffset: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int {
+        if (!Opus.isDredAvailable) {
+            throw UnsupportedOperationException(
+                "DRED is not available in this Opus build. Use the kopus-full artifact for DRED support."
+            )
+        }
+        return nativeDecodeDred24(handle, dred.handle, dredOffset, outPcm, outPcmOffset, frameSize)
+    }
+
     private external fun nativeCreate(fs: Int, ch: Int): Long
     private external fun nativeDestroy(h: Long)
 
@@ -106,4 +151,31 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
 
     private external fun nativeCtl(h: Long, request: Int, value: Int): Int
     private external fun nativeCtlQuery(h: Long, request: Int): Int
+
+    private external fun nativeDecodeDredShort(
+        h: Long,
+        dredHandle: Long,
+        dredOffset: Int,
+        outPcm: ShortArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int
+
+    private external fun nativeDecodeDredFloat(
+        h: Long,
+        dredHandle: Long,
+        dredOffset: Int,
+        outPcm: FloatArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int
+
+    private external fun nativeDecodeDred24(
+        h: Long,
+        dredHandle: Long,
+        dredOffset: Int,
+        outPcm: IntArray,
+        outPcmOffset: Int,
+        frameSize: Int
+    ): Int
 }

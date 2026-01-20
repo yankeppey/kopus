@@ -7,6 +7,48 @@ plugins {
     alias(libs.plugins.vanniktechMavenPublish)
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+//  Build variant configuration
+//  Set -Pkopus.full=true to build kopus-full with DRED/OSCE/QEXT support
+// ────────────────────────────────────────────────────────────────────────────
+val isFullVariant = project.findProperty("kopus.full")?.toString()?.toBoolean() ?: false
+val variantSuffix = if (isFullVariant) "-full" else ""
+val artifactId = "kopus$variantSuffix"
+val opusBuildDirName = if (isFullVariant) "opus-full" else "opus"
+
+if (isFullVariant) {
+    logger.lifecycle("Building kopus-full variant with DRED/OSCE/QEXT support")
+} else {
+    logger.lifecycle("Building kopus (base) variant")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+//  Generated build flags
+// ────────────────────────────────────────────────────────────────────────────
+val generatedSrcDir = layout.buildDirectory.dir("generated/kopus/commonMain/kotlin")
+
+val generateBuildFlags by tasks.registering {
+    val outputDir = generatedSrcDir
+    outputs.dir(outputDir)
+    inputs.property("isFullVariant", isFullVariant)
+
+    doLast {
+        val dir = outputDir.get().asFile.resolve("eu/buney/kopus")
+        dir.mkdirs()
+        dir.resolve("BuildFlags.kt").writeText(
+            """
+            |/*
+            | * Generated file - do not edit manually.
+            | * Build variant: ${if (isFullVariant) "kopus-full" else "kopus"}
+            | */
+            |package eu.buney.kopus
+            |
+            |internal const val IS_FULL_VARIANT = $isFullVariant
+            """.trimMargin()
+        )
+    }
+}
+
 android {
     namespace = "eu.buney.kopus"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -17,6 +59,13 @@ android {
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64") }
 
         consumerProguardFiles("consumer-rules.pro")
+
+        // Pass DRED flag to CMake for full variant
+        externalNativeBuild {
+            cmake {
+                arguments("-DKOPUS_ENABLE_DRED=${if (isFullVariant) "ON" else "OFF"}")
+            }
+        }
     }
 
     packaging {
@@ -65,7 +114,9 @@ kotlin {
         target.compilations.getByName("main") {
             cinterops {
                 val libopus by creating {
-                    defFile(project.file("cinterop/opus.def"))
+                    // Use variant-specific cinterop definition
+                    val defFileName = if (isFullVariant) "opus-full.def" else "opus.def"
+                    defFile(project.file("cinterop/$defFileName"))
 
                     // Header search path
                     includeDirs.allHeaders(layout.projectDirectory.file("../third_party/opus/include").asFile)
@@ -76,6 +127,9 @@ kotlin {
     }
     applyDefaultHierarchyTemplate()
     sourceSets {
+        commonMain {
+            kotlin.srcDir(generatedSrcDir)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
@@ -93,6 +147,22 @@ kotlin {
             }
         }
     }
+}
+
+// Ensure build flags are generated before all Kotlin compilation and related tasks
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn(generateBuildFlags)
+}
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+    dependsOn(generateBuildFlags)
+}
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon>().configureEach {
+    dependsOn(generateBuildFlags)
+}
+
+// Ensure build flags are generated before sources jar and metadata tasks
+tasks.matching { it.name.contains("ourcesJar") || it.name.contains("MetadataJar") }.configureEach {
+    dependsOn(generateBuildFlags)
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -113,33 +183,40 @@ val buildJniLinuxWindows by tasks.register<Exec>("buildJniLinuxWindows") {
 
     inputs.file(dockerContextFile)
     inputs.dir(jniSources)
+    inputs.property("variant", isFullVariant)
     outputs.dir(jniDockerOutputDir)
 
     environment("DOCKER_BUILDKIT", "1")
-    commandLine("/opt/homebrew/bin/docker build -o ${jniDockerOutputDir.get().asFile.absolutePath} ${dockerContext.absolutePath}".split(" "))
+    val variantArg = if (isFullVariant) "full" else "base"
+    commandLine("bash", "-c", "/opt/homebrew/bin/docker build --build-arg OPUS_VARIANT=$variantArg -o ${jniDockerOutputDir.get().asFile.absolutePath} ${dockerContext.absolutePath}")
 }
 
-val buildOpusAppleDir = layout.buildDirectory.dir("opus")
+val buildOpusAppleDir = layout.buildDirectory.dir(opusBuildDirName)
 val buildOpusApple by tasks.register<Exec>("buildOpusApple") {
     group = "build"
     description = "Build Opus for macOS/iOS arm64/x86_64"
     inputs.file(project.rootProject.file("scripts/build_opus_apple.sh"))
+    inputs.property("variant", isFullVariant)
     outputs.dir(buildOpusAppleDir)
 
-    commandLine("../scripts/build_opus_apple.sh")
+    val variantArg = if (isFullVariant) "--full" else ""
+    commandLine("bash", "-c", "../scripts/build_opus_apple.sh $variantArg")
 }
-val buildJniMacosFolder = rootProject.layout.buildDirectory.dir("buildJniMacos")
+val jniMacosFolderName = if (isFullVariant) "buildJniMacosFull" else "buildJniMacos"
+val buildJniMacosFolder = rootProject.layout.buildDirectory.dir(jniMacosFolderName)
 val buildJniMacos by tasks.register<Exec>("buildJniMacos") {
     group = "build"
     description = "Build JNI libs for macOS arm64/x86_64"
     dependsOn(buildOpusApple)
     inputs.dir(jniSources)
+    inputs.property("variant", isFullVariant)
     outputs.dir(buildJniMacosFolder)
 
-    commandLine("../scripts/build_opus_jni.sh")
+    val variantArg = if (isFullVariant) "--full" else ""
+    commandLine("bash", "-c", "../scripts/build_opus_jni.sh $variantArg")
 }
 
-val buildOpusAndroidDir = rootDir.resolve("build/opus/android")
+val buildOpusAndroidDir = rootDir.resolve("build/$opusBuildDirName/android")
 // Task to build Opus for Android before NDK build
 val buildOpusAndroid by tasks.register<Exec>("buildOpusAndroid") {
     group = "build"
@@ -148,13 +225,15 @@ val buildOpusAndroid by tasks.register<Exec>("buildOpusAndroid") {
     workingDir = rootDir
 
     inputs.file(rootDir.resolve("scripts/build_opus_android.sh"))
+    inputs.property("variant", isFullVariant)
     // would be nice to add opus sources as input, but I am confused how to
     // separate source files from the build outputs so skipping it for now
 
     // Inject the NDK path from Android Gradle plugin
     environment("ANDROID_NDK_HOME", android.ndkDirectory.absolutePath)
 
-    commandLine("./scripts/build_opus_android.sh")
+    val variantArg = if (isFullVariant) "--full" else ""
+    commandLine("bash", "-c", "./scripts/build_opus_android.sh $variantArg")
     outputs.dir(buildOpusAndroidDir)
 }
 
@@ -238,11 +317,15 @@ mavenPublishing {
 
     signAllPublications()
 
-    coordinates(group.toString(), "kopus", version.toString())
+    coordinates(group.toString(), artifactId, version.toString())
 
     pom {
-        name = "Kopus"
-        description = "Kotlin Multiplatform bindings for Opus"
+        name = if (isFullVariant) "Kopus Full" else "Kopus"
+        description = if (isFullVariant) {
+            "Kotlin Multiplatform bindings for Opus with experimental DNN features (DRED, OSCE, QEXT)"
+        } else {
+            "Kotlin Multiplatform bindings for Opus"
+        }
         inceptionYear = "2025"
         url = "https://github.com/yankeppey/kopus"
         licenses {
