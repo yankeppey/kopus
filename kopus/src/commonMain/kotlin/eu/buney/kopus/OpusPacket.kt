@@ -7,47 +7,6 @@
 package eu.buney.kopus
 
 /**
- * Result of parsing an Opus packet into its constituent frames.
- *
- * This provides zero-copy access to frame data by returning offsets into the original
- * packet buffer rather than copying frame data.
- *
- * @property toc The Table of Contents byte, encoding mode, bandwidth, and frame duration
- * @property numFrames Number of frames in the packet (1 to 48)
- * @property frameOffsets Byte offsets into the original packet where each frame starts.
- *                        Array has [numFrames] valid entries.
- * @property frameSizes Size in bytes of each frame. Array has [numFrames] valid entries.
- * @property payloadOffset Byte offset where the payload (first frame) begins
- */
-data class PacketFrameInfo(
-    val toc: Byte,
-    val numFrames: Int,
-    val frameOffsets: IntArray,
-    val frameSizes: IntArray,
-    val payloadOffset: Int
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as PacketFrameInfo
-        return toc == other.toc &&
-                numFrames == other.numFrames &&
-                frameOffsets.contentEquals(other.frameOffsets) &&
-                frameSizes.contentEquals(other.frameSizes) &&
-                payloadOffset == other.payloadOffset
-    }
-
-    override fun hashCode(): Int {
-        var result = toc.hashCode()
-        result = 31 * result + numFrames
-        result = 31 * result + frameOffsets.contentHashCode()
-        result = 31 * result + frameSizes.contentHashCode()
-        result = 31 * result + payloadOffset
-        return result
-    }
-}
-
-/**
  * Packet inspection utilities for analyzing Opus packets without decoding.
  *
  * These functions allow examination of Opus packet properties such as bandwidth,
@@ -181,30 +140,4 @@ expect object OpusPacket {
      * @return The new packet size on success, or an error code
      */
     fun unpadMultistream(data: ByteArray, len: Int, nbStreams: Int): Int
-
-    /**
-     * Parses an Opus packet into its constituent frames.
-     *
-     * This function dissects the packet structure and returns metadata about where
-     * each frame is located within the packet. It provides zero-copy access to frame
-     * data by returning offsets into the original buffer rather than copying.
-     *
-     * Mirrors the C function `opus_packet_parse`.
-     *
-     * Example usage:
-     * ```kotlin
-     * val info = OpusPacket.parse(packet, packet.size)
-     * for (i in 0 until info.numFrames) {
-     *     // Zero-copy access to frame i
-     *     val frameStart = info.frameOffsets[i]
-     *     val frameSize = info.frameSizes[i]
-     *     processFrame(packet, frameStart, frameSize)
-     * }
-     * ```
-     *
-     * @param packet Opus packet data
-     * @param len Length of the packet in bytes
-     * @return [PacketFrameInfo] containing frame metadata, or null if the packet is invalid
-     */
-    fun parse(packet: ByteArray, len: Int = packet.size): PacketFrameInfo?
 }
