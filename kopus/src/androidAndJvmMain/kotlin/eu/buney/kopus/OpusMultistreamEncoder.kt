@@ -32,7 +32,6 @@ actual class OpusMultistreamEncoder private constructor(
         coupledStreams = coupledStreams,
         application = application
     ) {
-        OpusLoader.load()
         handle = nativeCreate(sampleRate, channels, streams, coupledStreams, mapping, application.value)
         require(handle != 0L) { "nativeCreate failed for multistream encoder" }
     }
@@ -90,7 +89,6 @@ actual class OpusMultistreamEncoder private constructor(
             mappingFamily: Int,
             application: OpusApplication
         ): SurroundEncoderResult {
-            OpusLoader.load()
             val mapping = ByteArray(channels)
             val result = nativeCreateSurroundStatic(sampleRate, channels, mappingFamily, mapping, application.value)
                 ?: throw IllegalStateException("nativeCreateSurround failed")
