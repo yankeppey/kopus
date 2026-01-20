@@ -15,13 +15,13 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 /**
- * Decoder fuzzing tests ported from native libopus test_opus_decode.c
+ * Decoder tests ported from native libopus test_opus_decode.c
  *
  * These tests verify that the Opus decoder handles various input conditions
  * correctly, including all valid mode combinations, invalid inputs,
  * deterministic behavior, and PLC (Packet Loss Concealment).
  */
-class OpusDecoderFuzzTest {
+class OpusDecodeTest {
 
     companion object {
         // Test constants matching the original C test (test_opus_decode.c)

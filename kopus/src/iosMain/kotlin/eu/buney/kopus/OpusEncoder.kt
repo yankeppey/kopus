@@ -9,10 +9,6 @@ package eu.buney.kopus
 import kotlinx.cinterop.*
 import opus.c.*
 
-private fun check(err: Int) {
-    require(err >= 0) { "Opus error $err" }
-}
-
 @OptIn(ExperimentalForeignApi::class)
 actual class OpusEncoder actual constructor(
     actual val sampleRate: Int,
@@ -27,7 +23,7 @@ actual class OpusEncoder actual constructor(
             val err = alloc<IntVar>()
             ptr = opus_encoder_create(sampleRate, channels, application.value, err.ptr)
                 ?: error("opus_encoder_create returned null")
-            check(err.value)
+            require(err.value >= 0) { "Opus encoder create error ${err.value}" }
         }
     }
 
@@ -50,7 +46,7 @@ actual class OpusEncoder actual constructor(
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                check(len)
+                require(len >= 0) { "Opus encode error $len" }
                 len
             }
         }
@@ -71,7 +67,7 @@ actual class OpusEncoder actual constructor(
                     outPtr.reinterpret(),
                     maxDataBytes
                 )
-                check(len)
+                require(len >= 0) { "Opus encode error $len" }
                 len
             }
         }
@@ -87,7 +83,7 @@ actual class OpusEncoder actual constructor(
         return memScoped {
             val valuePtr = alloc<IntVar>()
             val result = opus_encoder_ctl(ptr, request, valuePtr.ptr)
-            if (result < 0) error("Error querying parameter: $result")
+            require(result >= 0) { "Opus encoder CTL error $result" }
             valuePtr.value
         }
     }

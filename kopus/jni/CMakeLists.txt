@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.18)
 project(opus_jni LANGUAGES C)
 
 # Shared JNI glue code
-add_library(opus_jni SHARED opus_jni.c opus_decoder_jni.c opus_opus_jni.c)
+add_library(opus_jni SHARED
+    opus_jni.c
+    opus_decoder_jni.c
+    opus_opus_jni.c
+    opus_multistream_encoder_jni.c
+    opus_multistream_decoder_jni.c
+)
 
 # Include JNI headers
 if (NOT ANDROID)

@@ -10,19 +10,35 @@ import kotlinx.cinterop.*
 import opus.c.*
 
 @OptIn(ExperimentalForeignApi::class)
-actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels: Int) : AutoCloseable {
-    private val ptr: CPointer<cnames.structs.OpusDecoder>
+actual class OpusMultistreamDecoder actual constructor(
+    actual val sampleRate: Int,
+    actual val channels: Int,
+    actual val streams: Int,
+    actual val coupledStreams: Int,
+    mapping: ByteArray
+) : AutoCloseable {
+
+    private val ptr: CPointer<cnames.structs.OpusMSDecoder>
 
     init {
         memScoped {
             val e = alloc<IntVar>()
-            ptr = opus_decoder_create(sampleRate, channels, e.ptr) ?: error("opus_decoder_create returned null")
-            require(e.value >= 0) { "Opus decoder create error ${e.value}" }
+            ptr = mapping.usePinned { pinnedMapping ->
+                opus_multistream_decoder_create(
+                    sampleRate,
+                    channels,
+                    streams,
+                    coupledStreams,
+                    pinnedMapping.addressOf(0).reinterpret(),
+                    e.ptr
+                ) ?: error("opus_multistream_decoder_create returned null")
+            }
+            require(e.value >= 0) { "Opus multistream decoder create error ${e.value}" }
         }
     }
 
     actual override fun close() {
-        opus_decoder_destroy(ptr)
+        opus_multistream_decoder_destroy(ptr)
     }
 
     actual fun decode(
@@ -39,7 +55,7 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
 
             val decoded = if (inData != null) {
                 inData.usePinned { pinnedIn ->
-                    opus_decode(
+                    opus_multistream_decode(
                         ptr,
                         pinnedIn.addressOf(inDataOffset).reinterpret(),
                         len,
@@ -49,10 +65,10 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
                     )
                 }
             } else {
-                opus_decode(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
+                opus_multistream_decode(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
 
-            require(decoded >= 0) { "Opus decode error $decoded" }
+            require(decoded >= 0) { "Opus multistream decode error $decoded" }
             decoded
         }
 
@@ -70,7 +86,7 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
 
             val decoded = if (inData != null) {
                 inData.usePinned { pinnedIn ->
-                    opus_decode_float(
+                    opus_multistream_decode_float(
                         ptr,
                         pinnedIn.addressOf(inDataOffset).reinterpret(),
                         len,
@@ -80,27 +96,25 @@ actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels
                     )
                 }
             } else {
-                opus_decode_float(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
+                opus_multistream_decode_float(ptr, null, 0, outPtr, frameSize, if (decodeFec) 1 else 0)
             }
 
-            require(decoded >= 0) { "Opus decode error $decoded" }
+            require(decoded >= 0) { "Opus multistream decode error $decoded" }
             decoded
         }
 
-
     actual fun ctl(request: Int, value: Int): Int {
         return memScoped {
-            opus_decoder_ctl(ptr, request, value)
+            opus_multistream_decoder_ctl(ptr, request, value)
         }
     }
 
     actual fun ctlQuery(request: Int): Int {
         return memScoped {
             val valuePtr = alloc<IntVar>()
-            val result = opus_decoder_ctl(ptr, request, valuePtr.ptr)
-            require(result >= 0) { "Opus decoder CTL error $result" }
+            val result = opus_multistream_decoder_ctl(ptr, request, valuePtr.ptr)
+            require(result >= 0) { "Opus multistream decoder CTL error $result" }
             valuePtr.value
         }
     }
-
 }

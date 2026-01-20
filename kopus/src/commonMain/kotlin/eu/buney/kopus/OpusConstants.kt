@@ -89,3 +89,7 @@ const val OPUS_FRAMESIZE_120_MS = 5009
 // Using 1276 * 3 = 3828 bytes to safely handle larger packet sizes including
 // multi-frame packets and padding (rounded to 4000 for simplicity)
 const val DEFAULT_MAX_BYTES = 4000
+
+// Multistream CTL request constants
+const val OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST = 5120
+const val OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST = 5122
