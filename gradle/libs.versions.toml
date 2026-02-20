@@ -1,7 +1,7 @@
 [versions]
 agp = "9.0.1"
 composeCharts = "0.2.5"
-kopus = "1.6.1.1"
+kopus = "1.6.1.2"
 kotlin = "2.3.10"
 android-compileSdk = "36"
 android-minSdk = "26"
