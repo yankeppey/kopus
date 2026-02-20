@@ -1,5 +1,7 @@
 # Kopus
 
+[![Maven Central](https://img.shields.io/maven-central/v/eu.buney.kopus/kopus)](https://central.sonatype.com/artifact/eu.buney.kopus/kopus)
+
 Kopus is a lightweight Kotlin Multiplatform wrapper for the [Opus audio codec](https://opus-codec.org/). It provides Kotlin bindings for Opus encoding and decoding functionality across Android, JVM, and iOS platforms.
 
 ![Kopus encoding/decoding demonstration](screenshots/encoding.png)
