@@ -47,7 +47,7 @@ object OpusLoader {
         val (osPath, libName) = when {
             os.contains("mac") -> "macos" to "libopus_jni.dylib"
             os.contains("linux") -> "linux" to "libopus_jni.so"
-            os.contains("windows") -> "windows" to "opus_jni.dll"
+            os.contains("windows") -> "windows" to "libopus_jni.dll"
             else -> throw RuntimeException("Unsupported OS: $os")
         }
 
