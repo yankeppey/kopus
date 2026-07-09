@@ -27,7 +27,7 @@ jobs:
         variant: [base, full]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -149,7 +149,7 @@ jobs:
           cp /tmp/jni-win-x64/libopus_jni.dll desktop-native-libs/windows/x86_64/
 
       - name: Upload Desktop Native Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: desktop-native-libs-${{ matrix.variant }}
           path: desktop-native-libs/
@@ -169,18 +169,18 @@ jobs:
         variant: [base, full]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Fetch git tags for version detection
         run: |
@@ -193,7 +193,7 @@ jobs:
           git describe --tags --match 'v*' || echo "Git describe failed"
 
       - name: Download Desktop Native Libraries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: desktop-native-libs-${{ matrix.variant }}
           path: kopus/build/jni_docker/
@@ -226,7 +226,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: jvm-test-results-${{ matrix.variant }}
           path: |
@@ -257,7 +257,7 @@ jobs:
           tar -czf /tmp/kopus-maven-artifacts${{ steps.config.outputs.artifact_suffix }}.tar.gz eu/buney/
 
       - name: Upload Maven Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: kopus-maven-artifacts-${{ matrix.variant }}
           path: /tmp/kopus-maven-artifacts${{ steps.config.outputs.artifact_suffix }}.tar.gz

@@ -40,7 +40,8 @@ for i in "${!ABIS[@]}"; do
   else
     PLATFORM="$OS-$(uname -m)"
   fi
-  CC_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$PLATFORM/bin/${HOST}${API}-clang"
+  TOOLBIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$PLATFORM/bin"
+  CC_PATH="$TOOLBIN/${HOST}${API}-clang"
 
   OUT_DIR="$OUT_ROOT/$ABI"
   mkdir -p "$OUT_DIR"
@@ -55,6 +56,10 @@ for i in "${!ABIS[@]}"; do
         --enable-static \
         --host="$HOST" \
         CC="$CC_PATH" \
+        AR="$TOOLBIN/llvm-ar" \
+        RANLIB="$TOOLBIN/llvm-ranlib" \
+        STRIP="$TOOLBIN/llvm-strip" \
+        NM="$TOOLBIN/llvm-nm" \
         CFLAGS="-Oz" \
         --prefix="$OUT_DIR" \
         $EXTRA_CONFIGURE_FLAGS
