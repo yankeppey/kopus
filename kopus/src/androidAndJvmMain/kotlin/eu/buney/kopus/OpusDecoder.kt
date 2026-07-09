@@ -7,10 +7,11 @@
 package eu.buney.kopus
 
 actual class OpusDecoder actual constructor(sampleRate: Int, actual val channels: Int) : AutoCloseable {
-    private var handle: Long = nativeCreate(sampleRate, channels)
+    private var handle: Long
 
     init {
         OpusLoader.load()
+        handle = nativeCreate(sampleRate, channels)
         require(handle != 0L) { "Opus decoder create failed" }
     }
 
