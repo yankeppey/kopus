@@ -31,10 +31,10 @@ Kopus is a lightweight Kotlin Multiplatform wrapper for the [Opus audio codec](h
 ```kotlin
 dependencies {
     // Standard version
-    implementation("eu.buney.kopus:kopus:1.6.1.2")
+    implementation("eu.buney.kopus:kopus:1.6.1.3")
 
     // Full version with DRED/OSCE/QEXT (larger binary size)
-    implementation("eu.buney.kopus:kopus-full:1.6.1.2")
+    implementation("eu.buney.kopus:kopus-full:1.6.1.3")
 }
 ```
 

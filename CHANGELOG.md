@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.1.3
+
+### Fixed
+- Fix `OpusDecoder` failing to initialize when it is the first Kopus object created in a process — `nativeCreate()` was called before the native library was loaded ([#8](https://github.com/yankeppey/kopus/pull/8))
+
 ## 1.6.1.2
 
 ### Fixed
